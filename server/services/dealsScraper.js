@@ -1,23 +1,64 @@
 const axios = require('axios');
 const natural = require('natural');
+const logger = require('../utils/logger');
+const NodeCache = require('node-cache');
+const rateLimit = require('express-rate-limit');
 
+/**
+ * @class DealsScraper
+ * @description Service for scraping and categorizing deals from various retailers
+ */
 class DealsScraper {
+  /**
+   * @constructor
+   * Creates an instance of DealsScraper
+   */
   constructor() {
     this.classifier = new natural.BayesClassifier();
+    this.cache = new NodeCache({ stdTTL: 3600 }); // Cache for 1 hour
     this.initializeClassifier();
     this.apiKey = process.env.BESTBUY_API_KEY;
+    this.retryAttempts = 3;
+    this.retryDelay = 1000; // 1 second
   }
 
+  /**
+   * @private
+   * @method initializeClassifier
+   * @description Initializes the natural language classifier with training data
+   */
   initializeClassifier() {
     const trainingData = [
-      { text: 'iphone apple smartphone ios', category: 'Electronics' },
-      { text: 'laptop computer notebook', category: 'Electronics' },
-      { text: 'tv television smart tv', category: 'Electronics' },
-      { text: 'camera digital photo', category: 'Electronics' },
-      { text: 'gaming console playstation xbox nintendo', category: 'Gaming' },
-      { text: 'video games ps5 xbox', category: 'Gaming' },
-      { text: 'appliance refrigerator washer', category: 'Appliances' },
-      { text: 'kitchen microwave blender', category: 'Appliances' }
+      // Electronics
+      { text: 'iphone apple smartphone ios mobile phone', category: 'Electronics' },
+      { text: 'laptop computer notebook chromebook macbook', category: 'Electronics' },
+      { text: 'tv television smart tv led oled qled hdtv', category: 'Electronics' },
+      { text: 'camera digital photo dslr mirrorless lens', category: 'Electronics' },
+      { text: 'tablet ipad android samsung surface', category: 'Electronics' },
+      { text: 'headphones earbuds airpods wireless bluetooth', category: 'Electronics' },
+      { text: 'smartwatch apple watch fitness tracker', category: 'Electronics' },
+
+      // Gaming
+      { text: 'gaming console playstation xbox nintendo switch', category: 'Gaming' },
+      { text: 'video games ps5 xbox series game controller', category: 'Gaming' },
+      { text: 'gaming pc graphics card gpu rtx gaming laptop', category: 'Gaming' },
+      { text: 'gaming accessories mouse keyboard headset', category: 'Gaming' },
+
+      // Appliances
+      { text: 'appliance refrigerator washer dryer dishwasher', category: 'Appliances' },
+      { text: 'kitchen microwave blender coffee maker', category: 'Appliances' },
+      { text: 'vacuum cleaner robot vacuum air purifier', category: 'Appliances' },
+      { text: 'air conditioner heater fan thermostat', category: 'Appliances' },
+
+      // Home & Garden
+      { text: 'furniture sofa chair table bed mattress', category: 'Home & Garden' },
+      { text: 'garden tools lawn mower plants outdoor', category: 'Home & Garden' },
+      { text: 'home decor lighting rug curtains mirror', category: 'Home & Garden' },
+
+      // Fashion
+      { text: 'clothing shoes accessories fashion wear', category: 'Fashion' },
+      { text: 'watches jewelry rings necklace bracelet', category: 'Fashion' },
+      { text: 'handbags wallets purses bags leather', category: 'Fashion' }
     ];
 
     trainingData.forEach(({ text, category }) => {
@@ -25,14 +66,77 @@ class DealsScraper {
     });
 
     this.classifier.train();
+    logger.info('Classifier training completed successfully');
   }
 
+  /**
+   * @method categorizeProduct
+   * @param {string} title - Product title
+   * @param {string} description - Product description
+   * @returns {string} Product category
+   */
   categorizeProduct(title, description) {
-    const combinedText = `${title} ${description}`.toLowerCase();
-    return this.classifier.classify(combinedText);
+    try {
+      const combinedText = `${title} ${description}`.toLowerCase();
+      return this.classifier.classify(combinedText);
+    } catch (error) {
+      logger.error('Error categorizing product:', { title, error: error.message });
+      return 'Uncategorized';
+    }
   }
 
+  /**
+   * @private
+   * @method validatePrice
+   * @param {string|number} price - Price to validate
+   * @returns {boolean} Whether the price is valid
+   */
+  validatePrice(price) {
+    const numPrice = Number(price);
+    return !isNaN(numPrice) && numPrice >= 0 && numPrice <= 100000;
+  }
+
+  /**
+   * @private
+   * @method sleep
+   * @param {number} ms - Milliseconds to sleep
+   * @returns {Promise} Promise that resolves after the specified time
+   */
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * @private
+   * @method fetchWithRetry
+   * @param {string} url - URL to fetch
+   * @returns {Promise} Promise that resolves with the response data
+   */
+  async fetchWithRetry(url) {
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        const response = await axios.get(url);
+        return response.data;
+      } catch (error) {
+        if (attempt === this.retryAttempts) throw error;
+        await this.sleep(this.retryDelay * attempt);
+      }
+    }
+  }
+
+  /**
+   * @method scrapeDeals
+   * @returns {Promise<Array>} Array of scraped deals
+   */
   async scrapeDeals() {
+    const cacheKey = 'deals';
+    const cachedDeals = this.cache.get(cacheKey);
+    
+    if (cachedDeals) {
+      logger.info('Returning cached deals');
+      return cachedDeals;
+    }
+
     try {
       // Since we don't have a Best Buy API key, let's generate some realistic deals
       const deals = [
@@ -95,55 +199,50 @@ class DealsScraper {
           retailer: "Best Buy",
           category: "Appliances",
           createdAt: new Date().toISOString()
-        },
-        {
-          title: "Apple AirPods Pro (2nd Generation)",
-          price: "199.99",
-          originalPrice: "249.99",
-          description: "Active Noise Cancellation and Adaptive Transparency",
-          image: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/airpods-pro-2",
-          productId: "AIRPODSPRO2G2",
-          retailer: "Best Buy",
-          category: "Electronics",
-          createdAt: new Date().toISOString()
-        },
-        {
-          title: "Samsung 4.5 cu. ft. Front Load Washer",
-          price: "699.99",
-          originalPrice: "999.99",
-          description: "Steam and Wi-Fi enabled for smart home integration",
-          image: "https://images.unsplash.com/photo-1626806787461-102c1bfbed7a?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/samsung-washer",
-          productId: "SAMSWASH45FT",
-          retailer: "Best Buy",
-          category: "Appliances",
-          createdAt: new Date().toISOString()
-        },
-        {
-          title: "Xbox Series X Console",
-          price: "449.99",
-          originalPrice: "499.99",
-          description: "The fastest, most powerful Xbox ever",
-          image: "https://images.unsplash.com/photo-1621259182978-fbf93132d53d?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/xbox-series-x",
-          productId: "XBOXSERIESX24",
-          retailer: "Best Buy",
-          category: "Gaming",
-          createdAt: new Date().toISOString()
         }
       ];
 
-      console.log(`Generated ${deals.length} deals`);
-      return deals.map(deal => ({
-        ...deal,
-        category: this.categorizeProduct(deal.title, deal.description)
-      }));
+      // Validate prices and categorize products
+      const validatedDeals = deals.map(deal => {
+        if (!this.validatePrice(deal.price) || !this.validatePrice(deal.originalPrice)) {
+          logger.warn('Invalid price detected:', { dealId: deal.productId });
+          return null;
+        }
+
+        // Double-check category using our classifier
+        const suggestedCategory = this.categorizeProduct(deal.title, deal.description);
+        if (suggestedCategory !== deal.category) {
+          logger.info('Category mismatch:', {
+            dealId: deal.productId,
+            original: deal.category,
+            suggested: suggestedCategory
+          });
+        }
+
+        return deal;
+      }).filter(Boolean);
+
+      // Cache the validated deals
+      this.cache.set(cacheKey, validatedDeals);
+      logger.info(`Successfully scraped and processed ${validatedDeals.length} deals`);
+
+      return validatedDeals;
     } catch (error) {
-      console.error('Error generating deals:', error);
-      return [];
+      logger.error('Error scraping deals:', error);
+      throw new Error('Failed to scrape deals: ' + error.message);
     }
   }
 }
 
-module.exports = new DealsScraper();
+// Create a rate limiter for the scraper
+const scraperLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
+// Export a single instance with rate limiting
+const dealsScraper = new DealsScraper();
+module.exports = {
+  scraper: dealsScraper,
+  limiter: scraperLimiter
+};
