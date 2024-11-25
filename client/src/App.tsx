@@ -16,6 +16,12 @@ import DealCard from './components/DealCard';
 import Navbar from './components/Navbar';
 import { Deal } from './types/Deal';
 
+interface User {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 interface AppContentProps {
   // No props
 }
@@ -27,60 +33,66 @@ function AppContent() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const location = useLocation();
 
-  const fetchDeals = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching deals...');
-      
-      // First try the test endpoint
+  useEffect(() => {
+    // Check if user is authenticated on component mount
+    const token = localStorage.getItem('token');
+    const storedUserData = localStorage.getItem('userData');
+
+    console.log('Stored user data:', storedUserData);
+
+    if (token && storedUserData) {
       try {
-        const testResponse = await fetch('http://localhost:3001/api/test');
-        console.log('Test endpoint response:', await testResponse.json());
-      } catch (testError) {
-        console.error('Test endpoint failed:', testError);
+        const userData = JSON.parse(storedUserData);
+        console.log('Parsed user data:', userData);
+        console.log('User data keys:', Object.keys(userData));
+        console.log('User data values:', Object.values(userData));
+        setUser(userData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        handleLogout();
       }
-      
-      // Now try the deals endpoint
-      const response = await fetch('http://localhost:3001/api/deals', {
-        method: 'GET',
+    }
+  }, []);
+
+  const fetchUserData = async (token: string) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/profile', {
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('Error data:', errorData);
-        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Fetched deals:', data);
-      
-      if (Array.isArray(data)) {
-        setDeals(data);
-        if (data.length === 0) {
-          setError('No deals found');
-        }
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('Fetched user data:', userData);
+        console.log('User data keys:', Object.keys(userData));
+        console.log('User data values:', Object.values(userData));
+        // Update stored user data
+        localStorage.setItem('userData', JSON.stringify({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email
+        }));
+        setUser(userData);
+        setIsAuthenticated(true);
       } else {
-        console.error('Invalid data format received:', data);
-        setError('Invalid data format received from server');
-        setDeals([]);
+        handleLogout();
       }
-    } catch (err) {
-      console.error('Error fetching deals:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch deals');
-      setDeals([]);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      handleLogout();
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    setIsAuthenticated(false);
+    setUser(null);
   };
 
   useEffect(() => {
@@ -181,25 +193,81 @@ function AppContent() {
   // Don't show sidebar on auth pages
   const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(location.pathname);
 
+  const fetchDeals = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching deals...');
+      
+      // First try the test endpoint
+      try {
+        const testResponse = await fetch('http://localhost:3001/api/test');
+        console.log('Test endpoint response:', await testResponse.json());
+      } catch (testError) {
+        console.error('Test endpoint failed:', testError);
+      }
+      
+      // Now try the deals endpoint
+      const response = await fetch('http://localhost:3001/api/deals', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Error data:', errorData);
+        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched deals:', data);
+      
+      if (Array.isArray(data)) {
+        setDeals(data);
+        if (data.length === 0) {
+          setError('No deals found');
+        }
+      } else {
+        console.error('Invalid data format received:', data);
+        setError('Invalid data format received from server');
+        setDeals([]);
+      }
+    } catch (err) {
+      console.error('Error fetching deals:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch deals');
+      setDeals([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="app">
       <header className="app-header">
         <div className="header-left">
-          <img src={logo} alt="Daily Deals Logo" className="app-logo" />
+          <img src={logo} alt="DealsHunter Logo" className="app-logo" />
           <span className="site-name">DealsHunter</span>
           <div className="search-bar">
             <input
               type="text"
-              placeholder="Search for deals..."
+              placeholder="Search for the best deals..."
               className="search-input"
               value={searchQuery}
               onChange={handleSearch}
             />
           </div>
         </div>
-        <div className="header-right">
-          <Navbar isAuthenticated={isAuthenticated} />
-        </div>
+        <Navbar 
+          isAuthenticated={isAuthenticated} 
+          firstName={user?.firstName || 'User'}
+          onLogout={handleLogout}
+        />
       </header>
       
       {!isAuthPage && (

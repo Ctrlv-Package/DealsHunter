@@ -142,6 +142,14 @@ const LoginPage: React.FC = () => {
         throw new Error(data.message || 'Login failed');
       }
 
+      // Save token and user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userData', JSON.stringify({
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email
+      }));
+
       // Handle remember me
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', formData.email);
@@ -151,13 +159,13 @@ const LoginPage: React.FC = () => {
         localStorage.removeItem('rememberedPassword');
       }
 
-      // Store token
-      localStorage.setItem('token', data.token);
-      
-      // Redirect to home
+      // Navigate to home page
       navigate('/');
+      window.location.reload(); // Reload to update the auth state
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Login error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
     } finally {
       setLoading(false);
     }

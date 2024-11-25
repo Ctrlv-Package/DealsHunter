@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
+// Password validation regex
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,})/;
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -13,10 +16,22 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 6,
+    minlength: 8,
+    validate: {
+      validator: function(password) {
+        return passwordRegex.test(password);
+      },
+      message: 'Password must be at least 8 characters long, contain one uppercase letter, one lowercase letter, and one special character (!@#$%^&*)'
+    }
   },
-  name: {
+  firstName: {
     type: String,
+    required: true,
+    trim: true,
+  },
+  lastName: {
+    type: String,
+    required: true,
     trim: true,
   },
   bio: {
@@ -29,10 +44,7 @@ const userSchema = new mongoose.Schema({
   preferences: {
     emailNotifications: {
       dealAlerts: { type: Boolean, default: true },
-      priceDrops: { type: Boolean, default: true },
-      weeklyNewsletter: { type: Boolean, default: true },
-      specialOffers: { type: Boolean, default: true },
-      productRecommendations: { type: Boolean, default: true },
+      newsletters: { type: Boolean, default: true }
     },
     dealCategories: [{
       type: String,
