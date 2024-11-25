@@ -9,7 +9,7 @@ const auth = require('../middleware/auth'); // Assuming you have an auth middlew
 // Signup route
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { firstName, lastName, email, password } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -19,10 +19,10 @@ router.post('/signup', async (req, res) => {
 
     // Create new user
     const user = new User({
-      email,
-      password,
       firstName,
-      lastName
+      lastName,
+      email,
+      password
     });
 
     await user.save();
@@ -38,9 +38,9 @@ router.post('/signup', async (req, res) => {
       token,
       user: {
         id: user._id,
-        email: user.email,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        email: user.email
       }
     });
   } catch (error) {
@@ -72,13 +72,14 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    // Send response with user data
     res.json({
       token,
       user: {
         id: user._id,
-        email: user.email,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        email: user.email
       }
     });
   } catch (error) {
@@ -101,7 +102,13 @@ router.get('/profile', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    // Return user data
+    res.json({
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching profile', error: error.message });
   }

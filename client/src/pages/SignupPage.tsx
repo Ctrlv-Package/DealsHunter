@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Box,
@@ -9,7 +9,8 @@ import {
   InputAdornment,
   Link,
   CircularProgress,
-  Alert
+  Alert,
+  Stack
 } from '@mui/material';
 import {
   Visibility,
@@ -19,7 +20,15 @@ import {
   Lock as LockIcon,
   ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useNavigate } from 'react-router-dom';
+
+interface PasswordRequirement {
+  label: string;
+  regex: RegExp;
+  met: boolean;
+}
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +43,12 @@ const SignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>([
+    { label: 'At least 8 characters long', regex: /.{8,}/, met: false },
+    { label: 'One uppercase letter', regex: /[A-Z]/, met: false },
+    { label: 'One lowercase letter', regex: /[a-z]/, met: false },
+    { label: 'One special character (!@#$%^&*)', regex: /[!@#$%^&*]/, met: false }
+  ]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -41,19 +56,33 @@ const SignupPage: React.FC = () => {
       ...prev,
       [name]: value
     }));
+
+    // Update password requirements in real-time
+    if (name === 'password') {
+      setPasswordRequirements(prev =>
+        prev.map(req => ({
+          ...req,
+          met: req.regex.test(value)
+        }))
+      );
+    }
+  };
+
+  const validateForm = () => {
+    return passwordRequirements.every(req => req.met) && 
+           formData.password === formData.confirmPassword &&
+           formData.firstName && 
+           formData.lastName && 
+           /\S+@\S+\.\S+/.test(formData.email);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     setLoading(true);
     setError(null);
 
     try {
-      // Validation
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error('Passwords do not match');
-      }
-
       const response = await fetch('http://localhost:3001/api/auth/signup', {
         method: 'POST',
         headers: {
@@ -70,16 +99,24 @@ const SignupPage: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Signup failed');
+        throw new Error(data.message || 'Failed to create account');
       }
 
-      // Store token
+      // Save token and user data
       localStorage.setItem('token', data.token);
-      
-      // Redirect to home
+      localStorage.setItem('userData', JSON.stringify({
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email
+      }));
+
+      // Navigate to home page
       navigate('/');
+      window.location.reload(); // Reload to update the auth state
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Signup error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -203,6 +240,31 @@ const SignupPage: React.FC = () => {
             }}
           />
 
+          {/* Password Requirements List */}
+          <Box sx={{ mt: 1, mb: 2 }}>
+            {passwordRequirements.map((req, index) => (
+              <Stack 
+                key={index} 
+                direction="row" 
+                spacing={1} 
+                alignItems="center"
+                sx={{ 
+                  color: req.met ? 'success.main' : 'text.secondary',
+                  fontSize: '0.75rem',
+                  mb: 0.5
+                }}
+              >
+                {req.met ? 
+                  <CheckCircleIcon color="success" sx={{ fontSize: '1rem' }} /> : 
+                  <CancelIcon color="action" sx={{ fontSize: '1rem' }} />
+                }
+                <Typography variant="caption">
+                  {req.label}
+                </Typography>
+              </Stack>
+            ))}
+          </Box>
+
           <TextField
             margin="normal"
             required
@@ -239,7 +301,7 @@ const SignupPage: React.FC = () => {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
-            disabled={loading}
+            disabled={loading || !validateForm()}
           >
             {loading ? <CircularProgress size={24} /> : 'Sign Up'}
           </Button>

@@ -1,45 +1,65 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
+import { Logout as LogoutIcon } from '@mui/icons-material';
 
 interface NavbarProps {
   isAuthenticated: boolean;
+  firstName?: string;
+  onLogout?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ isAuthenticated }) => {
+const Navbar: React.FC<NavbarProps> = ({ isAuthenticated, firstName, onLogout }) => {
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+  };
 
   return (
     <nav className="navbar">
-      <div className="navbar-right">
+      <Stack 
+        direction="row" 
+        spacing={2} 
+        alignItems="center"
+      >
         <Button
           variant="outlined"
           color="primary"
           onClick={() => navigate('/alerts')}
           startIcon={<span role="img" aria-label="alerts">🔔</span>}
-          sx={{ mr: 1 }}
         >
           Deals Alerts
         </Button>
         
         {isAuthenticated ? (
-          <div className="user-menu">
-            <Button
-              variant="text"
-              color="primary"
-              onClick={() => navigate('/profile')}
-              startIcon={<span role="img" aria-label="user">👤</span>}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography 
+              variant="subtitle1" 
+              sx={{ 
+                color: 'primary.main',
+                minWidth: 'max-content'
+              }}
             >
-              My Profile
+              Hi, {firstName}
+            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleLogout}
+              startIcon={<LogoutIcon />}
+            >
+              Logout
             </Button>
-          </div>
+          </Stack>
         ) : (
-          <>
+          <Stack direction="row" spacing={2} alignItems="center">
             <Button
               variant="outlined"
               color="primary"
               onClick={() => navigate('/login')}
-              sx={{ mr: 1 }}
             >
               Login
             </Button>
@@ -50,9 +70,9 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated }) => {
             >
               Sign Up
             </Button>
-          </>
+          </Stack>
         )}
-      </div>
+      </Stack>
     </nav>
   );
 };
