@@ -4,35 +4,26 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
 const Deal = require('./models/Deal');
+const connectDB = require('./config/database');
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Initialize Express app
 const app = express();
 
-// Middleware
+// Basic CORS setup
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
 }));
+
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/deals_db', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => {
-  console.error('MongoDB connection error:', err);
-  process.exit(1); // Exit if cannot connect to MongoDB
+// Basic health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
-
-// Enable mongoose debug mode
-mongoose.set('debug', true);
 
 // Auth routes
 const authRoutes = require('./routes/auth');
@@ -41,32 +32,24 @@ const userRoutes = require('./routes/user');
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 
-// Routes
+// Deals endpoint
 app.get('/api/deals', async (req, res) => {
   try {
-    console.log('Fetching deals from database...');
+    console.log('Received request for deals');
+    console.log('Headers:', req.headers);
     console.log('MongoDB connection state:', mongoose.connection.readyState);
-    console.log('Deal model:', typeof Deal);
     
-    const deals = await Deal.find().sort('-createdAt');
-    console.log(`Found ${deals.length} deals`);
-    
-    if (!deals || deals.length === 0) {
-      console.log('No deals found in database');
-      return res.status(404).json({ message: 'No deals found' });
-    }
+    const deals = await Deal.find({ isActive: true }).sort('-lastUpdated');
+    console.log(`Found ${deals.length} deals:`, JSON.stringify(deals, null, 2));
     
     res.json(deals);
   } catch (error) {
-    console.error('Detailed error in /api/deals:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Error in /api/deals:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ 
-      error: 'Failed to fetch deals', 
-      details: error.message,
-      name: error.name
+      message: 'Error fetching deals',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -136,23 +119,6 @@ app.post('/api/reset', async (req, res) => {
     
     res.status(500).json({ 
       message: 'Error resetting database',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-// Deals endpoint
-app.get('/api/deals', async (req, res) => {
-  try {
-    console.log('Fetching deals from database...');
-    const deals = await Deal.find({ isActive: true }).sort('-lastUpdated');
-    console.log(`Found ${deals.length} deals`);
-    res.json(deals);
-  } catch (error) {
-    console.error('Error in /api/deals:', error);
-    res.status(500).json({ 
-      message: 'Error fetching deals',
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -339,6 +305,11 @@ app.get('/api/deals/filter', async (req, res) => {
   }
 });
 
+// Test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working' });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -365,7 +336,18 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-const port = process.env.PORT || 3001;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+console.log('Initializing server...');
+connectDB()
+  .then(() => {
+    console.log('MongoDB connection successful');
+    
+    // Only start the server after MongoDB connects
+    const PORT = 3001; // Force port 3001
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to MongoDB:', err);
+    process.exit(1);
+  });
