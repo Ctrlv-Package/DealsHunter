@@ -38,7 +38,11 @@ function AppContent() {
       // First try the test endpoint
       try {
         const testResponse = await fetch('http://localhost:3001/api/test');
-        console.log('Test endpoint response:', await testResponse.json());
+        if (!testResponse.ok) {
+          throw new Error(`Test endpoint failed with status: ${testResponse.status}`);
+        }
+        const testData = await testResponse.json();
+        console.log('Test endpoint response:', testData);
       } catch (testError) {
         console.error('Test endpoint failed:', testError);
       }
@@ -49,35 +53,21 @@ function AppContent() {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'include'
       });
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('Error data:', errorData);
-        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to fetch deals: ${response.status} ${response.statusText}\n${JSON.stringify(errorData)}`);
       }
       
       const data = await response.json();
-      console.log('Fetched deals:', data);
-      
-      if (Array.isArray(data)) {
-        setDeals(data);
-        if (data.length === 0) {
-          setError('No deals found');
-        }
-      } else {
-        console.error('Invalid data format received:', data);
-        setError('Invalid data format received from server');
-        setDeals([]);
-      }
-    } catch (err) {
-      console.error('Error fetching deals:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch deals');
-      setDeals([]);
+      console.log('Deals data:', data);
+      setDeals(data);
+    } catch (error) {
+      console.error('Error fetching deals:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch deals');
     } finally {
       setLoading(false);
     }

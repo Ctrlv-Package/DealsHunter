@@ -12,17 +12,26 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 // Initialize Express app
 const app = express();
 
-// Basic CORS setup
+// Detailed CORS setup
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true
 }));
+
+// Middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Headers:', req.headers);
+  next();
+});
 
 app.use(express.json());
 
 // Basic health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Auth routes
@@ -38,11 +47,14 @@ app.use('/api/alerts', dealAlertRoutes);
 app.get('/api/deals', async (req, res) => {
   try {
     console.log('Received request for deals');
-    console.log('Headers:', req.headers);
     console.log('MongoDB connection state:', mongoose.connection.readyState);
     
-    const deals = await Deal.find({ isActive: true }).sort('-lastUpdated');
-    console.log(`Found ${deals.length} deals:`, JSON.stringify(deals, null, 2));
+    if (mongoose.connection.readyState !== 1) {
+      throw new Error('MongoDB is not connected');
+    }
+    
+    const deals = await Deal.find({ isActive: true }).sort('-createdAt');
+    console.log(`Found ${deals.length} deals`);
     
     res.json(deals);
   } catch (error) {
@@ -309,7 +321,11 @@ app.get('/api/deals/filter', async (req, res) => {
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working' });
+  res.json({ 
+    message: 'API is working',
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
 // Error handling middleware
@@ -341,12 +357,12 @@ process.on('SIGINT', async () => {
 console.log('Initializing server...');
 connectDB()
   .then(() => {
-    console.log('MongoDB connection successful');
-    
-    // Only start the server after MongoDB connects
-    const PORT = 3001; // Force port 3001
+    const PORT = 3001;
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Test endpoint: http://localhost:${PORT}/api/test`);
+      console.log(`Deals endpoint: http://localhost:${PORT}/api/deals`);
+      console.log('MongoDB connection state:', mongoose.connection.readyState);
     });
   })
   .catch(err => {
