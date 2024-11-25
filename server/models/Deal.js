@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const alertService = require('../services/alertService');
 
 const dealSchema = new mongoose.Schema({
   title: {
@@ -60,6 +61,26 @@ const dealSchema = new mongoose.Schema({
 dealSchema.index({ category: 1 });
 dealSchema.index({ isActive: 1 });
 dealSchema.index({ productId: 1 }, { unique: true });
+
+// Middleware to process alerts after saving a new deal
+dealSchema.post('save', async function(doc) {
+  if (this.isNew) {
+    try {
+      await alertService.processNewDeals([doc]);
+    } catch (error) {
+      console.error('Error processing alerts for new deal:', error);
+    }
+  }
+});
+
+// Middleware to process alerts after saving multiple deals
+dealSchema.post('insertMany', async function(docs) {
+  try {
+    await alertService.processNewDeals(docs);
+  } catch (error) {
+    console.error('Error processing alerts for new deals:', error);
+  }
+});
 
 const Deal = mongoose.model('Deal', dealSchema);
 module.exports = Deal;

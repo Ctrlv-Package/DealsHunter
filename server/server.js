@@ -37,9 +37,11 @@ mongoose.set('debug', true);
 // Auth routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const dealAlertRoutes = require('./routes/dealAlerts');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/alerts', dealAlertRoutes);
 
 // Routes
 app.get('/api/deals', async (req, res) => {
