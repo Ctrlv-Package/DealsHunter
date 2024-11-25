@@ -22,10 +22,6 @@ interface User {
   email: string;
 }
 
-interface AppContentProps {
-  // No props
-}
-
 function AppContent() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +33,6 @@ function AppContent() {
   const location = useLocation();
 
   useEffect(() => {
-    // Check if user is authenticated on component mount
     const token = localStorage.getItem('token');
     const storedUserData = localStorage.getItem('userData');
 
@@ -55,6 +50,21 @@ function AppContent() {
         console.error('Error parsing user data:', error);
         handleLogout();
       }
+
+      // Test endpoint logic
+      fetch('http://localhost:3001/api/test')
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Test endpoint failed with status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((testData) => {
+          console.log('Test endpoint response:', testData);
+        })
+        .catch((testError) => {
+          console.error('Test endpoint failed:', testError);
+        });
     }
   }, []);
 
@@ -62,21 +72,23 @@ function AppContent() {
     try {
       const response = await fetch('http://localhost:3001/api/auth/profile', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
         const userData = await response.json();
         console.log('Fetched user data:', userData);
-        console.log('User data keys:', Object.keys(userData));
-        console.log('User data values:', Object.values(userData));
-        // Update stored user data
-        localStorage.setItem('userData', JSON.stringify({
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email
-        }));
+        localStorage.setItem(
+          'userData',
+          JSON.stringify({
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+          })
+        );
         setUser(userData);
         setIsAuthenticated(true);
       } else {
@@ -106,6 +118,48 @@ function AppContent() {
     }
   }, [deals.length, loading, error]);
 
+  const fetchDeals = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching deals...');
+
+      // Test endpoint logic
+      fetch('http://localhost:3001/api/test')
+        .then((response) => response.json())
+        .then((data) => {
+          console.log('Test endpoint response:', data);
+        })
+        .catch((error) => console.error('Test endpoint error:', error));
+
+      const response = await fetch('http://localhost:3001/api/deals', {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Fetched deals:', data);
+
+      if (Array.isArray(data)) {
+        setDeals(data);
+      } else {
+        throw new Error('Invalid data format received from server');
+      }
+    } catch (err) {
+      console.error('Error fetching deals:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch deals');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
   };
@@ -115,137 +169,17 @@ function AppContent() {
   };
 
   const filteredDeals = useMemo(() => {
-    const dealsMap: { [key: string]: Deal[] } = {};
-    
-    deals.forEach(deal => {
-      // First filter by search query
-      const matchesSearch = searchQuery === '' || 
-        deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.retailer.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Then filter by category
-      if (matchesSearch && (selectedCategory === 'All' || deal.category === selectedCategory)) {
-        if (!dealsMap[deal.category]) {
-          dealsMap[deal.category] = [];
-        }
-        dealsMap[deal.category].push(deal);
-      }
-    });
-
-    return dealsMap;
+    return deals.filter(
+      (deal) =>
+        (selectedCategory === 'All' || deal.category === selectedCategory) &&
+        (searchQuery === '' ||
+          deal.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
   }, [deals, selectedCategory, searchQuery]);
 
-  const carouselResponsive = {
-    superLargeDesktop: {
-      breakpoint: { max: 4000, min: 1600 },
-      items: 5,
-      slidesToSlide: 2,
-    },
-    desktop: {
-      breakpoint: { max: 1600, min: 1024 },
-      items: 4,
-      slidesToSlide: 2,
-    },
-    tablet: {
-      breakpoint: { max: 1024, min: 768 },
-      items: 3,
-      slidesToSlide: 1,
-    },
-    mobile: {
-      breakpoint: { max: 768, min: 480 },
-      items: 2,
-      slidesToSlide: 1,
-    },
-    smallMobile: {
-      breakpoint: { max: 480, min: 0 },
-      items: 1,
-      slidesToSlide: 1,
-    }
-  };
-
-  const CustomButtonGroup = ({ next, previous, carouselState }: any) => {
-    if (!carouselState) return null;
-    
-    return (
-      <div className="carousel-button-group">
-        <IconButton 
-          className="custom-carousel-button prev" 
-          onClick={previous}
-          aria-label="Previous"
-          size="large"
-        >
-          <ChevronLeft />
-        </IconButton>
-        <IconButton 
-          className="custom-carousel-button next" 
-          onClick={next}
-          aria-label="Next"
-          size="large"
-        >
-          <ChevronRight />
-        </IconButton>
-      </div>
-    );
-  };
-
-  // Don't show sidebar on auth pages
-  const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(location.pathname);
-
-  const fetchDeals = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching deals...');
-      
-      // First try the test endpoint
-      try {
-        const testResponse = await fetch('http://localhost:3001/api/test');
-        console.log('Test endpoint response:', await testResponse.json());
-      } catch (testError) {
-        console.error('Test endpoint failed:', testError);
-      }
-      
-      // Now try the deals endpoint
-      const response = await fetch('http://localhost:3001/api/deals', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('Error data:', errorData);
-        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Fetched deals:', data);
-      
-      if (Array.isArray(data)) {
-        setDeals(data);
-        if (data.length === 0) {
-          setError('No deals found');
-        }
-      } else {
-        console.error('Invalid data format received:', data);
-        setError('Invalid data format received from server');
-        setDeals([]);
-      }
-    } catch (err) {
-      console.error('Error fetching deals:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch deals');
-      setDeals([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(
+    location.pathname
+  );
 
   return (
     <div className="app">
@@ -263,13 +197,12 @@ function AppContent() {
             />
           </div>
         </div>
-        <Navbar 
-          isAuthenticated={isAuthenticated} 
+        <Navbar
+          isAuthenticated={isAuthenticated}
           firstName={user?.firstName || 'User'}
           onLogout={handleLogout}
         />
       </header>
-      
       {!isAuthPage && (
         <div className="main-content">
           <CategorySidebar
@@ -278,106 +211,26 @@ function AppContent() {
           />
           <div className="deals-container">
             {loading ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  minHeight: 300,
-                  width: '100%',
-                }}
-              >
-                <CircularProgress />
-              </Box>
+              <CircularProgress />
             ) : error ? (
-              <Paper
-                sx={{
-                  p: 3,
-                  textAlign: 'center',
-                  minHeight: 300,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: 2
-                }}
-              >
-                <Typography variant="h6" color="error">
-                  Error Loading Deals
-                </Typography>
-                <Typography color="text.secondary">
-                  {error}
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<RefreshIcon />}
-                  onClick={fetchDeals}
-                >
-                  Try Again
-                </Button>
+              <Paper>
+                <Typography color="error">{error}</Typography>
               </Paper>
             ) : (
-              Object.entries(filteredDeals).map(([category, categoryDeals]) => (
-                <Paper
-                  key={category}
-                  elevation={1}
-                  sx={{
-                    p: 3,
-                    borderRadius: 2,
-                    backgroundColor: 'background.paper',
-                    position: 'relative',
-                    overflow: 'visible'
-                  }}
-                >
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 600,
-                      marginBottom: 2,
-                      color: 'text.primary',
-                    }}
-                  >
-                    {category}
-                  </Typography>
-                  <div className="carousel-section">
-                    <Carousel
-                      responsive={carouselResponsive}
-                      infinite={false}
-                      className="deals-carousel"
-                      customButtonGroup={<CustomButtonGroup />}
-                      arrows={false}
-                      renderButtonGroupOutside={false}
-                      autoPlay={false}
-                      swipeable={true}
-                      draggable={true}
-                      partialVisible={false}
-                      customTransition="transform 300ms ease-in-out"
-                      transitionDuration={300}
-                      containerClass="carousel-container"
-                      itemClass="carousel-item"
-                      shouldResetAutoplay={false}
-                    >
-                      {categoryDeals.map((deal) => (
-                        <Box key={deal._id}>
-                          <DealCard deal={deal} />
-                        </Box>
-                      ))}
-                    </Carousel>
-                  </div>
-                </Paper>
+              filteredDeals.map((deal) => (
+                <DealCard key={deal._id} deal={deal} />
               ))
             )}
           </div>
         </div>
       )}
-
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route 
-          path="/profile" 
-          element={isAuthenticated ? <UserProfilePage /> : <LoginPage />} 
+        <Route
+          path="/profile"
+          element={isAuthenticated ? <UserProfilePage /> : <LoginPage />}
         />
       </Routes>
     </div>
