@@ -9,7 +9,8 @@ import {
   InputAdornment,
   Link,
   CircularProgress,
-  Alert
+  Alert,
+  Stack,
 } from '@mui/material';
 import {
   Visibility,
@@ -17,16 +18,16 @@ import {
   Email as EmailIcon,
   Person as PersonIcon,
   Lock as LockIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useNavigate } from 'react-router-dom';
 
-interface ValidationErrors {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
+interface PasswordRequirement {
+  label: string;
+  regex: RegExp;
+  met: boolean;
 }
 
 const SignupPage: React.FC = () => {
@@ -36,105 +37,46 @@ const SignupPage: React.FC = () => {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const validateField = (name: string, value: string): string => {
-    switch (name) {
-      case 'firstName':
-        if (!value) return 'First name is required';
-        if (value.length < 2) return 'First name must be at least 2 characters';
-        break;
-      case 'lastName':
-        if (!value) return 'Last name is required';
-        if (value.length < 2) return 'Last name must be at least 2 characters';
-        break;
-      case 'email':
-        if (!value) return 'Email is required';
-        if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)) {
-          return 'Invalid email address';
-        }
-        break;
-      case 'password':
-        if (!value) return 'Password is required';
-        const missingRequirements = [];
-        if (value.length < 8) missingRequirements.push('at least 8 characters');
-        if (!/[A-Z]/.test(value)) missingRequirements.push('1 uppercase letter');
-        if (!/[a-z]/.test(value)) missingRequirements.push('1 lowercase letter');
-        if (!/[0-9]/.test(value)) missingRequirements.push('1 number');
-        if (!/[!@#$%^&*]/.test(value)) missingRequirements.push('1 special character (!@#$%^&*)');
-        
-        if (missingRequirements.length > 0) {
-          return `Password must contain: ${missingRequirements.join(', ')}`;
-        }
-        break;
-      case 'confirmPassword':
-        if (!value) return 'Please confirm your password';
-        if (value !== formData.password) return 'Passwords do not match';
-        break;
-    }
-    return '';
-  };
+  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>([
+    { label: 'At least 8 characters long', regex: /.{8,}/, met: false },
+    { label: 'One uppercase letter', regex: /[A-Z]/, met: false },
+    { label: 'One lowercase letter', regex: /[a-z]/, met: false },
+    { label: 'One special character (!@#$%^&*)', regex: /[!@#$%^&*]/, met: false },
+  ]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
-    // Validate on change if field has been touched
-    if (touched[name]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [name]: validateField(name, value)
-      }));
+    if (name === 'password') {
+      setPasswordRequirements((prev) =>
+        prev.map((req) => ({
+          ...req,
+          met: req.regex.test(value),
+        }))
+      );
     }
   };
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setTouched(prev => ({
-      ...prev,
-      [name]: true
-    }));
-    setValidationErrors(prev => ({
-      ...prev,
-      [name]: validateField(name, value)
-    }));
-  };
-
-  const validateForm = (): boolean => {
-    const errors: ValidationErrors = {};
-    Object.keys(formData).forEach(key => {
-      const error = validateField(key, formData[key as keyof typeof formData]);
-      if (error) {
-        errors[key as keyof ValidationErrors] = error;
-      }
-    });
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+  const validateForm = () => {
+    const isPasswordValid = passwordRequirements.every((req) => req.met);
+    const isConfirmPasswordValid = formData.password === formData.confirmPassword;
+    return isPasswordValid && isConfirmPasswordValid && formData.firstName && formData.lastName && /\S+@\S+\.\S+/.test(formData.email);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Set all fields as touched
-    const allTouched = Object.keys(formData).reduce((acc, key) => ({
-      ...acc,
-      [key]: true
-    }), {});
-    setTouched(allTouched);
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     setError(null);
@@ -149,29 +91,33 @@ const SignupPage: React.FC = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Signup failed');
+        throw new Error(data.message || 'Failed to create account');
       }
 
-      // Store token and user info
+      // Save token and user data
       localStorage.setItem('token', data.token);
-      let userName = data.user.firstName;
-      if (!userName) {
-        userName = formData.email.split('@')[0].split('.')[0];
-        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-      }
-      localStorage.setItem('userName', userName);
-      
-      // Redirect to home
+      localStorage.setItem(
+        'userData',
+        JSON.stringify({
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          email: data.user.email,
+        })
+      );
+
+      // Navigate to the home page
       navigate('/');
+      window.location.reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Signup error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -187,10 +133,7 @@ const SignupPage: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <IconButton
-          onClick={() => navigate('/')}
-          sx={{ alignSelf: 'flex-start', mb: 2 }}
-        >
+        <IconButton onClick={() => navigate('/')} sx={{ alignSelf: 'flex-start', mb: 2 }}>
           <ArrowBackIcon />
         </IconButton>
 
@@ -216,9 +159,6 @@ const SignupPage: React.FC = () => {
             autoFocus
             value={formData.firstName}
             onChange={handleInputChange}
-            onBlur={handleBlur}
-            error={touched.firstName && !!validationErrors.firstName}
-            helperText={touched.firstName && validationErrors.firstName}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -237,9 +177,6 @@ const SignupPage: React.FC = () => {
             autoComplete="family-name"
             value={formData.lastName}
             onChange={handleInputChange}
-            onBlur={handleBlur}
-            error={touched.lastName && !!validationErrors.lastName}
-            helperText={touched.lastName && validationErrors.lastName}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -258,9 +195,6 @@ const SignupPage: React.FC = () => {
             autoComplete="email"
             value={formData.email}
             onChange={handleInputChange}
-            onBlur={handleBlur}
-            error={touched.email && !!validationErrors.email}
-            helperText={touched.email && validationErrors.email}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -280,9 +214,6 @@ const SignupPage: React.FC = () => {
             autoComplete="new-password"
             value={formData.password}
             onChange={handleInputChange}
-            onBlur={handleBlur}
-            error={touched.password && !!validationErrors.password}
-            helperText={touched.password && validationErrors.password}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -302,6 +233,30 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
+
+          <Box sx={{ mt: 1, mb: 2 }}>
+            {passwordRequirements.map((req, index) => (
+              <Stack
+                key={index}
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{
+                  color: req.met ? 'success.main' : 'text.secondary',
+                  fontSize: '0.75rem',
+                  mb: 0.5,
+                }}
+              >
+                {req.met ? (
+                  <CheckCircleIcon color="success" sx={{ fontSize: '1rem' }} />
+                ) : (
+                  <CancelIcon color="action" sx={{ fontSize: '1rem' }} />
+                )}
+                <Typography variant="caption">{req.label}</Typography>
+              </Stack>
+            ))}
+          </Box>
+
           <TextField
             margin="normal"
             required
@@ -313,9 +268,6 @@ const SignupPage: React.FC = () => {
             autoComplete="new-password"
             value={formData.confirmPassword}
             onChange={handleInputChange}
-            onBlur={handleBlur}
-            error={touched.confirmPassword && !!validationErrors.confirmPassword}
-            helperText={touched.confirmPassword && validationErrors.confirmPassword}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -340,15 +292,11 @@ const SignupPage: React.FC = () => {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
-            disabled={loading}
+            disabled={loading || !validateForm()}
           >
             {loading ? <CircularProgress size={24} /> : 'Sign Up'}
           </Button>
-          <Link
-            component="button"
-            variant="body2"
-            onClick={() => navigate('/login')}
-          >
+          <Link component="button" variant="body2" onClick={() => navigate('/login')}>
             Already have an account? Log in
           </Link>
         </Box>
