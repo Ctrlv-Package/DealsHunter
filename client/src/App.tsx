@@ -104,9 +104,30 @@ function AppContent() {
     setSearchQuery(event.target.value);
   };
 
-  const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(
-    location.pathname
-  );
+  const carouselResponsive = {
+    superLargeDesktop: {
+      breakpoint: { max: 4000, min: 1600 },
+      items: 5,
+    },
+    desktop: {
+      breakpoint: { max: 1600, min: 1024 },
+      items: 4,
+    },
+    tablet: {
+      breakpoint: { max: 1024, min: 768 },
+      items: 3,
+    },
+    mobile: {
+      breakpoint: { max: 768, min: 480 },
+      items: 2,
+    },
+    smallMobile: {
+      breakpoint: { max: 480, min: 0 },
+      items: 1,
+    },
+  };
+
+  const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(location.pathname);
 
   return (
     <div className="app">

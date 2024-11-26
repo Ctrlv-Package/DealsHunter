@@ -3,12 +3,15 @@ export interface Deal {
   title: string;
   price: string;
   originalPrice: string;
-  description?: string;
+  savings: string;
+  description: string;
   image: string;
   productUrl: string;
   productId: string;
   retailer: string;
   category: string;
+  subcategory: string;
   isActive: boolean;
   createdAt: string;
+  lastUpdated: string;
 }

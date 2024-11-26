@@ -96,14 +96,99 @@ my-website/
 └── README.md             # Project documentation
 ```
 
-## Available Categories
+## Data Seeding
 
-- Electronics
-- Gaming
-- Appliances
-- Home & Garden
-- Fashion
-- Sports & Outdoors
+The application comes with a powerful data seeder that generates realistic deal data across multiple categories and subcategories.
+
+### Running the Seeder
+
+```bash
+cd server
+node scripts/generateDeals.js
+```
+
+The seeder will:
+1. Clear existing deals from the database
+2. Generate 30 deals for each subcategory (~1080 total deals)
+3. Create realistic product titles, descriptions, and prices
+4. Assign deals to various retailers
+5. Insert deals in batches of 10 for optimal performance
+
+### Supported Retailers
+
+The seeder randomly assigns deals to these popular retailers:
+- Amazon
+- Best Buy
+- Walmart
+- Target
+- eBay
+- Newegg
+- B&H Photo
+- Costco
+- Home Depot
+- Lowes
+
+### Available Categories
+
+1. Electronics
+   - Smartphones
+   - Laptops
+   - TVs
+   - Audio
+   - Cameras
+   - Accessories
+
+2. Gaming
+   - Consoles
+   - Video Games
+   - Gaming PCs
+   - Accessories
+   - VR
+   - Gaming Chairs
+
+3. Appliances
+   - Kitchen
+   - Laundry
+   - Refrigerators
+   - Dishwashers
+   - Air Conditioners
+   - Vacuums
+
+4. Home & Garden
+   - Furniture
+   - Decor
+   - Kitchen
+   - Bedding
+   - Garden Tools
+   - Lighting
+
+5. Fashion
+   - Men's Clothing
+   - Women's Clothing
+   - Shoes
+   - Accessories
+   - Jewelry
+   - Watches
+
+6. Sports & Outdoors
+   - Exercise Equipment
+   - Outdoor Recreation
+   - Sports Gear
+   - Camping
+   - Fishing
+   - Cycling
+
+### Generated Data
+
+Each deal includes:
+- Title and description
+- Original and discounted prices
+- Discount percentage (10-70%)
+- Category and subcategory
+- Retailer
+- Creation date (within last year)
+- Active status (90% probability)
+- Product images (5 per category)
 
 ## Contributing
 

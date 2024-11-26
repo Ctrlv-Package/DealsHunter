@@ -11,21 +11,20 @@ import {
   Divider
 } from '@mui/material';
 import {
-  ExpandLess,
-  ExpandMore,
   Smartphone,
-  Style,
+  SportsEsports,
   Home,
+  Weekend,
+  Checkroom,
   SportsBasketball,
-  Spa,
-  Toys,
-  Book,
   LocalOffer,
-  Category
+  Category,
+  ExpandLess,
+  ExpandMore
 } from '@mui/icons-material';
 
 interface CategorySidebarProps {
-  selectedCategory: string | null;
+  selectedCategory: string;
   onSelectCategory: (category: string) => void;
 }
 
@@ -85,13 +84,13 @@ const getCategoryIcon = (category: string) => {
     case 'Electronics':
       return <Smartphone />;
     case 'Gaming':
-      return <SportsBasketball />;
+      return <SportsEsports />;
     case 'Appliances':
       return <Home />;
     case 'Home & Garden':
-      return <Home />;
+      return <Weekend />;
     case 'Fashion':
-      return <Style />;
+      return <Checkroom />;
     case 'Sports & Outdoors':
       return <SportsBasketball />;
     default:
@@ -110,6 +109,7 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
       ...prev,
       [category]: !prev[category]
     }));
+    onSelectCategory(category);
   };
 
   const handleSubcategoryClick = (subcategory: string) => {
@@ -148,12 +148,25 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
           <React.Fragment key={category}>
             <ListItemButton
               onClick={() => handleCategoryClick(category)}
-              sx={{ borderRadius: 1 }}
+              selected={selectedCategory === category}
+              sx={{ 
+                borderRadius: 1,
+                mb: 0.5,
+                backgroundColor: selectedCategory === category ? 'action.selected' : 'transparent',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }}
             >
               <ListItemIcon>
                 {getCategoryIcon(category)}
               </ListItemIcon>
-              <ListItemText primary={category} />
+              <ListItemText 
+                primary={category}
+                primaryTypographyProps={{
+                  fontWeight: selectedCategory === category ? 600 : 400
+                }}
+              />
               {openCategories[category] ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
             <Collapse in={openCategories[category]} timeout="auto" unmountOnExit>
@@ -161,6 +174,8 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
                 {subcategories.map((subcategory) => (
                   <ListItemButton
                     key={subcategory}
+                    selected={selectedCategory === subcategory}
+                    onClick={() => handleSubcategoryClick(subcategory)}
                     sx={{
                       pl: 4,
                       borderRadius: 1,
@@ -171,8 +186,6 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
                         backgroundColor: 'action.hover',
                       },
                     }}
-                    onClick={() => handleSubcategoryClick(subcategory)}
-                    selected={selectedCategory === subcategory}
                   >
                     <ListItemText 
                       primary={subcategory}
