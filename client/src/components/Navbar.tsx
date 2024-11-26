@@ -16,34 +16,32 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated, firstName, onLogout })
     if (onLogout) {
       onLogout();
     }
+    navigate('/');
+    window.location.reload();
   };
 
   return (
     <nav className="navbar">
-      <Stack 
-        direction="row" 
-        spacing={2} 
-        alignItems="center"
-      >
+      <Stack direction="row" spacing={2} alignItems="center">
         <Button
           variant="outlined"
           color="primary"
           onClick={() => navigate('/alerts')}
           startIcon={<span role="img" aria-label="alerts">🔔</span>}
         >
-          Deals Alerts
+          Deal Alerts
         </Button>
-        
+
         {isAuthenticated ? (
           <Stack direction="row" spacing={2} alignItems="center">
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
+            <Typography
+              variant="subtitle1"
+              sx={{
                 color: 'primary.main',
-                minWidth: 'max-content'
+                minWidth: 'max-content',
               }}
             >
-              Hi, {firstName}
+              Hi, {firstName || 'User'}
             </Typography>
             <Button
               variant="outlined"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Container,
   Box,
@@ -10,7 +10,7 @@ import {
   Link,
   CircularProgress,
   Alert,
-  Stack
+  Stack,
 } from '@mui/material';
 import {
   Visibility,
@@ -18,7 +18,7 @@ import {
   Email as EmailIcon,
   Person as PersonIcon,
   Lock as LockIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -37,48 +37,47 @@ const SignupPage: React.FC = () => {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>([
     { label: 'At least 8 characters long', regex: /.{8,}/, met: false },
     { label: 'One uppercase letter', regex: /[A-Z]/, met: false },
     { label: 'One lowercase letter', regex: /[a-z]/, met: false },
-    { label: 'One special character (!@#$%^&*)', regex: /[!@#$%^&*]/, met: false }
+    { label: 'One special character (!@#$%^&*)', regex: /[!@#$%^&*]/, met: false },
   ]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
-    // Update password requirements in real-time
     if (name === 'password') {
-      setPasswordRequirements(prev =>
-        prev.map(req => ({
+      setPasswordRequirements((prev) =>
+        prev.map((req) => ({
           ...req,
-          met: req.regex.test(value)
+          met: req.regex.test(value),
         }))
       );
     }
   };
 
   const validateForm = () => {
-    return passwordRequirements.every(req => req.met) && 
-           formData.password === formData.confirmPassword &&
-           formData.firstName && 
-           formData.lastName && 
-           /\S+@\S+\.\S+/.test(formData.email);
+    const isPasswordValid = passwordRequirements.every((req) => req.met);
+    const isConfirmPasswordValid = formData.password === formData.confirmPassword;
+    return isPasswordValid && isConfirmPasswordValid && formData.firstName && formData.lastName && /\S+@\S+\.\S+/.test(formData.email);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
     setLoading(true);
     setError(null);
 
@@ -92,7 +91,7 @@ const SignupPage: React.FC = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
         }),
       });
 
@@ -104,16 +103,18 @@ const SignupPage: React.FC = () => {
 
       // Save token and user data
       localStorage.setItem('token', data.token);
-      localStorage.setItem('userData', JSON.stringify({
-        firstName: data.user.firstName,
-        lastName: data.user.lastName,
-        email: data.user.email
-      }));
+      localStorage.setItem(
+        'userData',
+        JSON.stringify({
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          email: data.user.email,
+        })
+      );
 
-      // Navigate to home page
+      // Navigate to the home page
       navigate('/');
-      window.location.reload(); // Reload to update the auth state
-
+      window.location.reload();
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account');
@@ -132,15 +133,12 @@ const SignupPage: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <IconButton
-          onClick={() => navigate('/')}
-          sx={{ alignSelf: 'flex-start', mb: 2 }}
-        >
+        <IconButton onClick={() => navigate('/')} sx={{ alignSelf: 'flex-start', mb: 2 }}>
           <ArrowBackIcon />
         </IconButton>
 
         <Typography component="h1" variant="h5">
-          Sign up
+          Sign Up
         </Typography>
 
         {error && (
@@ -169,7 +167,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <TextField
             margin="normal"
             required
@@ -188,7 +185,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <TextField
             margin="normal"
             required
@@ -197,7 +193,6 @@ const SignupPage: React.FC = () => {
             label="Email Address"
             name="email"
             autoComplete="email"
-            type="email"
             value={formData.email}
             onChange={handleInputChange}
             InputProps={{
@@ -208,7 +203,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <TextField
             margin="normal"
             required
@@ -240,27 +234,25 @@ const SignupPage: React.FC = () => {
             }}
           />
 
-          {/* Password Requirements List */}
           <Box sx={{ mt: 1, mb: 2 }}>
             {passwordRequirements.map((req, index) => (
-              <Stack 
-                key={index} 
-                direction="row" 
-                spacing={1} 
+              <Stack
+                key={index}
+                direction="row"
+                spacing={1}
                 alignItems="center"
-                sx={{ 
+                sx={{
                   color: req.met ? 'success.main' : 'text.secondary',
                   fontSize: '0.75rem',
-                  mb: 0.5
+                  mb: 0.5,
                 }}
               >
-                {req.met ? 
-                  <CheckCircleIcon color="success" sx={{ fontSize: '1rem' }} /> : 
+                {req.met ? (
+                  <CheckCircleIcon color="success" sx={{ fontSize: '1rem' }} />
+                ) : (
                   <CancelIcon color="action" sx={{ fontSize: '1rem' }} />
-                }
-                <Typography variant="caption">
-                  {req.label}
-                </Typography>
+                )}
+                <Typography variant="caption">{req.label}</Typography>
               </Stack>
             ))}
           </Box>
@@ -295,7 +287,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <Button
             type="submit"
             fullWidth
@@ -305,22 +296,9 @@ const SignupPage: React.FC = () => {
           >
             {loading ? <CircularProgress size={24} /> : 'Sign Up'}
           </Button>
-
-          <Box sx={{ textAlign: 'center', mt: 2, mb: 4 }}>
-            <Link 
-              component="button"
-              variant="body1"
-              onClick={() => navigate('/login')}
-              sx={{ 
-                textDecoration: 'none',
-                '&:hover': {
-                  textDecoration: 'underline'
-                }
-              }}
-            >
-              Already have an account? Log in
-            </Link>
-          </Box>
+          <Link component="button" variant="body2" onClick={() => navigate('/login')}>
+            Already have an account? Log in
+          </Link>
         </Box>
       </Box>
     </Container>
