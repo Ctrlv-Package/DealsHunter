@@ -11,14 +11,14 @@ import {
   CircularProgress,
   Alert,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Email as EmailIcon,
   Lock as LockIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,14 +41,11 @@ const LoginPage: React.FC = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // Check for saved credentials
+    // Load saved credentials if "Remember me" was previously checked
     const savedEmail = localStorage.getItem('rememberedEmail');
     const savedPassword = localStorage.getItem('rememberedPassword');
     if (savedEmail && savedPassword) {
-      setFormData({
-        email: savedEmail,
-        password: savedPassword
-      });
+      setFormData({ email: savedEmail, password: savedPassword });
       setRememberMe(true);
     }
   }, []);
@@ -67,41 +64,37 @@ const LoginPage: React.FC = () => {
           return 'Password must be at least 6 characters';
         }
         break;
+      default:
+        return '';
     }
     return '';
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Validate on change if field has been touched
+    // Validate on change if the field has been touched
     if (touched[name]) {
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        [name]: validateField(name, value)
+        [name]: validateField(name, value),
       }));
     }
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setTouched(prev => ({
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setValidationErrors((prev) => ({
       ...prev,
-      [name]: true
-    }));
-    setValidationErrors(prev => ({
-      ...prev,
-      [name]: validateField(name, value)
+      [name]: validateField(name, value),
     }));
   };
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
-    Object.keys(formData).forEach(key => {
+    Object.keys(formData).forEach((key) => {
       const error = validateField(key, formData[key as keyof typeof formData]);
       if (error) {
         errors[key as keyof ValidationErrors] = error;
@@ -113,16 +106,14 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Set all fields as touched
+
+    // Mark all fields as touched
     setTouched({
       email: true,
-      password: true
+      password: true,
     });
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     setError(null);
@@ -130,19 +121,26 @@ const LoginPage: React.FC = () => {
     try {
       const response = await fetch('http://localhost:3001/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      if (!response.ok) throw new Error(data.message || 'Login failed');
 
-      // Handle remember me
+      // Save token and user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem(
+        'userData',
+        JSON.stringify({
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          email: data.user.email,
+        })
+      );
+
+      // Handle "Remember me" option
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', formData.email);
         localStorage.setItem('rememberedPassword', formData.password);
@@ -151,20 +149,12 @@ const LoginPage: React.FC = () => {
         localStorage.removeItem('rememberedPassword');
       }
 
-      // Store authentication data
-      localStorage.setItem('token', data.token);
-      let userName = data.user.firstName;
-      if (!userName) {
-        // If no firstName, get first part of email and capitalize first letter
-        userName = data.user.email.split('@')[0].split('.')[0];
-        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-      }
-      localStorage.setItem('userName', userName);
-      
-      // Redirect to home
+      // Navigate to home and refresh the state
       navigate('/');
+      window.location.reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Login error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
     } finally {
       setLoading(false);
     }
@@ -265,7 +255,6 @@ const LoginPage: React.FC = () => {
               />
             }
             label="Remember me"
-            sx={{ mt: 1 }}
           />
 
           <Button
