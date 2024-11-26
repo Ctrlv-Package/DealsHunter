@@ -21,6 +21,14 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
+interface ValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+}
+
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -34,6 +42,45 @@ const SignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'firstName':
+        if (!value) return 'First name is required';
+        if (value.length < 2) return 'First name must be at least 2 characters';
+        break;
+      case 'lastName':
+        if (!value) return 'Last name is required';
+        if (value.length < 2) return 'Last name must be at least 2 characters';
+        break;
+      case 'email':
+        if (!value) return 'Email is required';
+        if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)) {
+          return 'Invalid email address';
+        }
+        break;
+      case 'password':
+        if (!value) return 'Password is required';
+        const missingRequirements = [];
+        if (value.length < 8) missingRequirements.push('at least 8 characters');
+        if (!/[A-Z]/.test(value)) missingRequirements.push('1 uppercase letter');
+        if (!/[a-z]/.test(value)) missingRequirements.push('1 lowercase letter');
+        if (!/[0-9]/.test(value)) missingRequirements.push('1 number');
+        if (!/[!@#$%^&*]/.test(value)) missingRequirements.push('1 special character (!@#$%^&*)');
+        
+        if (missingRequirements.length > 0) {
+          return `Password must contain: ${missingRequirements.join(', ')}`;
+        }
+        break;
+      case 'confirmPassword':
+        if (!value) return 'Please confirm your password';
+        if (value !== formData.password) return 'Passwords do not match';
+        break;
+    }
+    return '';
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -41,19 +88,58 @@ const SignupPage: React.FC = () => {
       ...prev,
       [name]: value
     }));
+
+    // Validate on change if field has been touched
+    if (touched[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: validateField(name, value)
+      }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    setValidationErrors(prev => ({
+      ...prev,
+      [name]: validateField(name, value)
+    }));
+  };
+
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key as keyof typeof formData]);
+      if (error) {
+        errors[key as keyof ValidationErrors] = error;
+      }
+    });
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Set all fields as touched
+    const allTouched = Object.keys(formData).reduce((acc, key) => ({
+      ...acc,
+      [key]: true
+    }), {});
+    setTouched(allTouched);
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Validation
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error('Passwords do not match');
-      }
-
       const response = await fetch('http://localhost:3001/api/auth/signup', {
         method: 'POST',
         headers: {
@@ -73,8 +159,14 @@ const SignupPage: React.FC = () => {
         throw new Error(data.message || 'Signup failed');
       }
 
-      // Store token
+      // Store token and user info
       localStorage.setItem('token', data.token);
+      let userName = data.user.firstName;
+      if (!userName) {
+        userName = formData.email.split('@')[0].split('.')[0];
+        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+      }
+      localStorage.setItem('userName', userName);
       
       // Redirect to home
       navigate('/');
@@ -103,7 +195,7 @@ const SignupPage: React.FC = () => {
         </IconButton>
 
         <Typography component="h1" variant="h5">
-          Sign up
+          Sign Up
         </Typography>
 
         {error && (
@@ -124,6 +216,9 @@ const SignupPage: React.FC = () => {
             autoFocus
             value={formData.firstName}
             onChange={handleInputChange}
+            onBlur={handleBlur}
+            error={touched.firstName && !!validationErrors.firstName}
+            helperText={touched.firstName && validationErrors.firstName}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -132,7 +227,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <TextField
             margin="normal"
             required
@@ -143,6 +237,9 @@ const SignupPage: React.FC = () => {
             autoComplete="family-name"
             value={formData.lastName}
             onChange={handleInputChange}
+            onBlur={handleBlur}
+            error={touched.lastName && !!validationErrors.lastName}
+            helperText={touched.lastName && validationErrors.lastName}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -151,7 +248,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <TextField
             margin="normal"
             required
@@ -160,9 +256,11 @@ const SignupPage: React.FC = () => {
             label="Email Address"
             name="email"
             autoComplete="email"
-            type="email"
             value={formData.email}
             onChange={handleInputChange}
+            onBlur={handleBlur}
+            error={touched.email && !!validationErrors.email}
+            helperText={touched.email && validationErrors.email}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -171,7 +269,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <TextField
             margin="normal"
             required
@@ -183,6 +280,9 @@ const SignupPage: React.FC = () => {
             autoComplete="new-password"
             value={formData.password}
             onChange={handleInputChange}
+            onBlur={handleBlur}
+            error={touched.password && !!validationErrors.password}
+            helperText={touched.password && validationErrors.password}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -202,7 +302,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <TextField
             margin="normal"
             required
@@ -214,6 +313,9 @@ const SignupPage: React.FC = () => {
             autoComplete="new-password"
             value={formData.confirmPassword}
             onChange={handleInputChange}
+            onBlur={handleBlur}
+            error={touched.confirmPassword && !!validationErrors.confirmPassword}
+            helperText={touched.confirmPassword && validationErrors.confirmPassword}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -233,7 +335,6 @@ const SignupPage: React.FC = () => {
               ),
             }}
           />
-
           <Button
             type="submit"
             fullWidth
@@ -243,22 +344,13 @@ const SignupPage: React.FC = () => {
           >
             {loading ? <CircularProgress size={24} /> : 'Sign Up'}
           </Button>
-
-          <Box sx={{ textAlign: 'center', mt: 2, mb: 4 }}>
-            <Link 
-              component="button"
-              variant="body1"
-              onClick={() => navigate('/login')}
-              sx={{ 
-                textDecoration: 'none',
-                '&:hover': {
-                  textDecoration: 'underline'
-                }
-              }}
-            >
-              Already have an account? Log in
-            </Link>
-          </Box>
+          <Link
+            component="button"
+            variant="body2"
+            onClick={() => navigate('/login')}
+          >
+            Already have an account? Log in
+          </Link>
         </Box>
       </Box>
     </Container>

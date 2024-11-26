@@ -1,13 +1,25 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 
 interface NavbarProps {
   isAuthenticated: boolean;
+  userName?: string;
+  onLogout?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ isAuthenticated }) => {
+const Navbar: React.FC<NavbarProps> = ({ isAuthenticated, userName, onLogout }) => {
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('userName');
+    navigate('/');
+    window.location.reload();
+  };
 
   return (
     <nav className="navbar">
@@ -23,16 +35,27 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated }) => {
         </Button>
         
         {isAuthenticated ? (
-          <div className="user-menu">
-            <Button
-              variant="text"
-              color="primary"
-              onClick={() => navigate('/profile')}
-              startIcon={<span role="img" aria-label="user">👤</span>}
+          <>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                display: 'inline-block', 
+                mr: 2,
+                verticalAlign: 'middle',
+                lineHeight: '36px'  // Match button height
+              }}
             >
-              My Profile
+              Hi, {userName}
+            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleLogout}
+              sx={{ mr: 1 }}
+            >
+              Logout
             </Button>
-          </div>
+          </>
         ) : (
           <>
             <Button

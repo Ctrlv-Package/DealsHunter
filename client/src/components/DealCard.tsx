@@ -9,18 +9,10 @@ import {
   Chip,
 } from '@mui/material';
 import { LocalOffer as LocalOfferIcon, Store as StoreIcon } from '@mui/icons-material';
+import { Deal } from '../types/Deal';
 
 interface DealCardProps {
-  deal: {
-    _id: string;
-    title: string;
-    price: string;
-    originalPrice: string;
-    description: string;
-    image: string;
-    productUrl: string;
-    retailer: string;
-  };
+  deal: Deal;
 }
 
 const DealCard: React.FC<DealCardProps> = ({ deal }) => {
@@ -29,97 +21,119 @@ const DealCard: React.FC<DealCardProps> = ({ deal }) => {
   );
 
   return (
-    <Card
+    <Card 
+      className="deal-card"
       sx={{
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        transition: 'transform 0.2s ease-in-out',
         '&:hover': {
           transform: 'translateY(-4px)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
         },
       }}
     >
-      {discount > 0 && (
-        <Chip
-          label={`-${discount}%`}
-          color="error"
-          size="small"
-          icon={<LocalOfferIcon />}
+      <Box sx={{ position: 'relative' }}>
+        <CardMedia
+          component="img"
+          height="200"
+          image={deal.image}
+          alt={deal.title}
           sx={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 1,
+            objectFit: 'contain',
+            backgroundColor: '#f5f5f5',
+            p: 2
           }}
         />
-      )}
-      <CardMedia
-        component="img"
-        image={deal.image}
-        alt={deal.title}
-        sx={{
-          height: 200,
-          objectFit: 'contain',
-          backgroundColor: '#f5f5f5',
-          p: 2,
-        }}
-      />
-      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Typography
-          variant="h6"
-          component="h3"
+        <Chip
+          icon={<LocalOfferIcon />}
+          label={`${discount}% OFF`}
+          color="error"
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            fontWeight: 'bold'
+          }}
+        />
+      </Box>
+
+      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography 
+          gutterBottom 
+          variant="h6" 
+          component="div"
           sx={{
             fontSize: '1rem',
             fontWeight: 600,
+            lineHeight: 1.2,
             mb: 1,
+            height: '2.4em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             display: '-webkit-box',
             WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: 1.4,
-            height: '2.8em',
+            WebkitBoxOrient: 'vertical'
           }}
         >
           {deal.title}
         </Typography>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <StoreIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-          <Typography variant="body2" color="text.secondary">
-            {deal.retailer}
+
+        <Box sx={{ display: 'flex', alignItems: 'baseline', mb: 1 }}>
+          <Typography
+            variant="h6"
+            color="primary"
+            sx={{
+              fontWeight: 'bold',
+              mr: 1
+            }}
+          >
+            ${deal.price}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              textDecoration: 'line-through'
+            }}
+          >
+            ${deal.originalPrice}
           </Typography>
         </Box>
 
-        <Box sx={{ mt: 'auto' }}>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 2 }}>
-            <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
-              ${parseFloat(deal.price).toFixed(2)}
-            </Typography>
-            {parseFloat(deal.originalPrice) > parseFloat(deal.price) && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textDecoration: 'line-through' }}
-              >
-                ${parseFloat(deal.originalPrice).toFixed(2)}
-              </Typography>
-            )}
-          </Box>
+        {deal.description && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mb: 2,
+              height: '3em',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}
+          >
+            {deal.description}
+          </Typography>
+        )}
 
+        <Box sx={{ mt: 'auto' }}>
+          <Chip
+            icon={<StoreIcon />}
+            label={deal.retailer}
+            variant="outlined"
+            size="small"
+            sx={{ mb: 1 }}
+          />
           <Button
             variant="contained"
-            color="primary"
             fullWidth
             href={deal.productUrl}
             target="_blank"
             rel="noopener noreferrer"
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
           >
             View Deal
           </Button>

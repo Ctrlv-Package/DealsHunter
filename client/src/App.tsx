@@ -27,7 +27,27 @@ function AppContent() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState<string | undefined>(undefined);
   const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedUserName = localStorage.getItem('userName');
+    if (token) {
+      setIsAuthenticated(true);
+      setUserName(storedUserName || undefined);
+    } else {
+      setIsAuthenticated(false);
+      setUserName(undefined);
+    }
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userName');
+    setIsAuthenticated(false);
+    setUserName(undefined);
+  };
 
   const fetchDeals = async () => {
     try {
@@ -53,8 +73,7 @@ function AppContent() {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
-        },
-        credentials: 'include'
+        }
       });
       
       if (!response.ok) {
@@ -64,6 +83,14 @@ function AppContent() {
       
       const data = await response.json();
       console.log('Deals data:', data);
+      
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.error('Received non-array data:', data);
+        setDeals([]);
+        throw new Error('Invalid data format received from server');
+      }
+      
       setDeals(data);
     } catch (error) {
       console.error('Error fetching deals:', error);
@@ -95,13 +122,19 @@ function AppContent() {
   const filteredDeals = useMemo(() => {
     const dealsMap: { [key: string]: Deal[] } = {};
     
+    // Ensure deals is an array before using forEach
+    if (!Array.isArray(deals)) {
+      console.error('Deals is not an array:', deals);
+      return {};
+    }
+    
     deals.forEach(deal => {
       // First filter by search query
       const matchesSearch = searchQuery === '' || 
         deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        deal.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        deal.retailer.toLowerCase().includes(searchQuery.toLowerCase());
+        deal.retailer?.toLowerCase().includes(searchQuery.toLowerCase());
 
       // Then filter by category
       if (matchesSearch && (selectedCategory === 'All' || deal.category === selectedCategory)) {
@@ -188,7 +221,11 @@ function AppContent() {
           </div>
         </div>
         <div className="header-right">
-          <Navbar isAuthenticated={isAuthenticated} />
+          <Navbar 
+            isAuthenticated={isAuthenticated} 
+            userName={userName}
+            onLogout={handleLogout}
+          />
         </div>
       </header>
       

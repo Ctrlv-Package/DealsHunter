@@ -151,8 +151,15 @@ const LoginPage: React.FC = () => {
         localStorage.removeItem('rememberedPassword');
       }
 
-      // Store token
+      // Store authentication data
       localStorage.setItem('token', data.token);
+      let userName = data.user.firstName;
+      if (!userName) {
+        // If no firstName, get first part of email and capitalize first letter
+        userName = data.user.email.split('@')[0].split('.')[0];
+        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+      }
+      localStorage.setItem('userName', userName);
       
       // Redirect to home
       navigate('/');
