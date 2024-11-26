@@ -29,6 +29,10 @@ const dealSchema = new mongoose.Schema({
     required: true,
     enum: ['Electronics', 'Gaming', 'Appliances', 'Home & Garden', 'Fashion', 'Sports & Outdoors']
   },
+  subcategory: {
+    type: String,
+    required: true
+  },
   description: {
     type: String,
     default: ''

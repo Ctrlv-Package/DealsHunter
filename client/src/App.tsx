@@ -120,29 +120,38 @@ function AppContent() {
   };
 
   const filteredDeals = useMemo(() => {
-    const dealsMap: { [key: string]: Deal[] } = {};
-    
-    // Ensure deals is an array before using forEach
+    // Ensure deals is an array before using filter
     if (!Array.isArray(deals)) {
       console.error('Deals is not an array:', deals);
       return {};
     }
-    
-    deals.forEach(deal => {
-      // First filter by search query
+
+    // Filter deals by search query and category/subcategory
+    const filteredDeals = deals.filter(deal => {
+      // Search filter
       const matchesSearch = searchQuery === '' || 
         deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        deal.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.retailer?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // Then filter by category
-      if (matchesSearch && (selectedCategory === 'All' || deal.category === selectedCategory)) {
-        if (!dealsMap[deal.category]) {
-          dealsMap[deal.category] = [];
-        }
-        dealsMap[deal.category].push(deal);
+      // Category filter
+      const matchesCategory = selectedCategory === 'All' || 
+        deal.category === selectedCategory || 
+        deal.subcategory === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+
+    // Group the filtered deals by category
+    const dealsMap: { [key: string]: Deal[] } = {};
+    filteredDeals.forEach(deal => {
+      const groupKey = selectedCategory === deal.subcategory ? deal.subcategory : deal.category;
+      if (!dealsMap[groupKey]) {
+        dealsMap[groupKey] = [];
       }
+      dealsMap[groupKey].push(deal);
     });
 
     return dealsMap;
