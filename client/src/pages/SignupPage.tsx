@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Dispatch, SetStateAction } from 'react';
 import {
   Container,
   Box,
@@ -30,7 +30,18 @@ interface PasswordRequirement {
   met: boolean;
 }
 
-const SignupPage: React.FC = () => {
+interface User {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface SignupPageProps {
+  setIsAuthenticated: Dispatch<SetStateAction<boolean>>;
+  setUser: Dispatch<SetStateAction<User | null>>;
+}
+
+const SignupPage: React.FC<SignupPageProps> = ({ setIsAuthenticated, setUser }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -43,6 +54,7 @@ const SignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passwordMatchError, setPasswordMatchError] = useState(false);
 
   const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>([
     { label: 'At least 8 characters long', regex: /.{8,}/, met: false },
@@ -57,6 +69,11 @@ const SignupPage: React.FC = () => {
       ...prev,
       [name]: value,
     }));
+
+    if (name === 'password' || name === 'confirmPassword') {
+      const otherField = name === 'password' ? 'confirmPassword' : 'password';
+      setPasswordMatchError(value !== formData[otherField] && formData[otherField] !== '');
+    }
 
     if (name === 'password') {
       setPasswordRequirements((prev) =>
@@ -127,27 +144,41 @@ const SignupPage: React.FC = () => {
     <Container component="main" maxWidth="xs">
       <Box
         sx={{
-          marginTop: 8,
+          marginTop: 4,
+          marginBottom: 4,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          minHeight: 'calc(100vh - 64px)', // Adjust for navbar height
+          position: 'relative',
+          pb: 8, // Add padding at bottom
         }}
       >
-        <IconButton onClick={() => navigate('/')} sx={{ alignSelf: 'flex-start', mb: 2 }}>
+        <IconButton 
+          onClick={() => navigate('/')} 
+          sx={{ 
+            alignSelf: 'flex-start', 
+            mb: 2,
+            bgcolor: (theme) => theme.palette.grey[100],
+            '&:hover': {
+              bgcolor: (theme) => theme.palette.grey[200],
+            },
+          }}
+        >
           <ArrowBackIcon />
         </IconButton>
 
-        <Typography component="h1" variant="h5">
+        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
           Sign Up
         </Typography>
 
         {error && (
-          <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+          <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
             {error}
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <TextField
             margin="normal"
             required
@@ -268,6 +299,8 @@ const SignupPage: React.FC = () => {
             autoComplete="new-password"
             value={formData.confirmPassword}
             onChange={handleInputChange}
+            error={passwordMatchError}
+            helperText={passwordMatchError ? "Passwords don't match" : ''}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -296,9 +329,28 @@ const SignupPage: React.FC = () => {
           >
             {loading ? <CircularProgress size={24} /> : 'Sign Up'}
           </Button>
-          <Link component="button" variant="body2" onClick={() => navigate('/login')}>
-            Already have an account? Log in
-          </Link>
+          
+          <Box sx={{ 
+            width: '100%', 
+            display: 'flex', 
+            justifyContent: 'center',
+            mt: 2,
+            mb: 4,
+          }}>
+            <Link 
+              component="button" 
+              variant="body2" 
+              onClick={() => navigate('/login')}
+              sx={{
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline',
+                },
+              }}
+            >
+              Already have an account? Log in
+            </Link>
+          </Box>
         </Box>
       </Box>
     </Container>
