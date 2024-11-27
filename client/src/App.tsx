@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import UserProfilePage from './pages/UserProfilePage';
+import AlertsPage from './pages/AlertsPage';
 import DealAlerts from './components/DealAlerts/DealAlerts';
 import CategorySidebar from './components/CategorySidebar';
 import DealCard from './components/DealCard';
@@ -151,33 +152,31 @@ function AppContent() {
           onLogout={handleLogout}
         />
       </header>
-      {!isAuthPage && (
-        <div className="main-content">
-          <CategorySidebar
-            selectedCategory={selectedCategory}
-            onSelectCategory={handleCategorySelect}
-          />
-          <div className="deals-container">
-            {loading ? (
-              <CircularProgress />
-            ) : error ? (
-              <Paper>
-                <Typography color="error">{error}</Typography>
-              </Paper>
-            ) : (
-              filteredDeals.map((deal) => <DealCard key={deal._id} deal={deal} />)
-            )}
-          </div>
-        </div>
-      )}
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
+        <Route path="/signup" element={<SignupPage setIsAuthenticated={setIsAuthenticated} setUser={setUser} />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route
-          path="/profile"
-          element={isAuthenticated ? <UserProfilePage /> : <LoginPage />}
-        />
+        <Route path="/profile" element={<UserProfilePage user={user} />} />
+        <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/" element={
+          <div className="main-content">
+            <CategorySidebar
+              selectedCategory={selectedCategory}
+              onSelectCategory={handleCategorySelect}
+            />
+            <div className="deals-container">
+              {loading ? (
+                <CircularProgress />
+              ) : error ? (
+                <Paper>
+                  <Typography color="error">{error}</Typography>
+                </Paper>
+              ) : (
+                filteredDeals.map((deal) => <DealCard key={deal._id} deal={deal} />)
+              )}
+            </div>
+          </div>
+        } />
       </Routes>
     </div>
   );

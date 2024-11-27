@@ -62,8 +62,13 @@ interface UserProfile {
 }
 
 interface User {
-  username: string;
+  firstName: string;
+  lastName: string;
   email: string;
+}
+
+interface UserProfilePageProps {
+  user: User | null;
 }
 
 const DEAL_CATEGORIES = [
@@ -71,9 +76,8 @@ const DEAL_CATEGORIES = [
   'Sports', 'Books', 'Toys', 'Other'
 ];
 
-const UserProfilePage: React.FC = () => {
+const UserProfilePage: React.FC<UserProfilePageProps> = ({ user }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newAlert, setNewAlert] = useState<Partial<PriceAlert>>({});
@@ -92,7 +96,7 @@ const UserProfilePage: React.FC = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch user data');
       const data = await response.json();
-      setUser(data);
+      // User data is now passed as a prop, no need to set it here
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -179,7 +183,7 @@ const UserProfilePage: React.FC = () => {
           </Avatar>
           
           <Typography component="h1" variant="h4" gutterBottom>
-            {user?.username || 'User Profile'}
+            {user?.firstName} {user?.lastName}
           </Typography>
           
           <Typography variant="body1" color="text.secondary" gutterBottom>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import {
   Container,
   Box,
@@ -22,12 +22,23 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
+interface User {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface LoginPageProps {
+  setIsAuthenticated: Dispatch<SetStateAction<boolean>>;
+  setUser: Dispatch<SetStateAction<User | null>>;
+}
+
 interface ValidationErrors {
   email?: string;
   password?: string;
 }
 
-const LoginPage: React.FC = () => {
+const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -150,6 +161,12 @@ const LoginPage: React.FC = () => {
       }
 
       // Navigate to home and refresh the state
+      setIsAuthenticated(true);
+      setUser({
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email,
+      });
       navigate('/');
       window.location.reload();
     } catch (err) {
