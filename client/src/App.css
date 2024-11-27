@@ -1,13 +1,14 @@
 :root {
   --primary-color: #1976d2;
   --primary-color-rgb: 25, 118, 210;
+  --primary-color-opacity: rgba(25, 118, 210, 0.1);
   --secondary-color: #dc004e;
   --background-color: #f5f5f5;
   --text-color: #333;
   --text-color-light: #666;
   --border-color: #ddd;
   --border-radius: 8px;
-  --header-height: 80px;
+  --header-height: 64px;
 }
 
 /* Layout */
@@ -19,16 +20,16 @@
 }
 
 .app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: white;
   height: var(--header-height);
-  background-color: white;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 2rem;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -80,7 +81,7 @@
 .search-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+  box-shadow: 0 0 0 3px var(--primary-color-opacity);
 }
 
 .search-input::placeholder {
@@ -98,19 +99,20 @@
 /* Main Content */
 .main-content {
   display: flex;
-  flex: 1;
-  padding: 2rem;
   gap: 2rem;
-  max-width: 1800px;
+  padding: 1rem;
+  max-width: 1600px;
   margin: 0 auto;
   width: 100%;
-  background-color: var(--background-color);
+  flex: 1;
   min-height: calc(100vh - var(--header-height));
   position: relative;
+  z-index: 1;
 }
 
 .deals-container {
   flex: 1;
+  min-width: 0; /* Prevents flex item from overflowing */
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -119,133 +121,241 @@
 
 /* Category Sidebar */
 .category-sidebar {
-  flex-shrink: 0;
+  width: 280px;
+  min-width: 280px;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  height: fit-content;
   position: sticky;
   top: calc(var(--header-height) + 1rem);
-  height: calc(100vh - var(--header-height) - 2rem);
-  overflow-y: auto;
+  transition: all 0.2s ease;
   align-self: flex-start;
+  z-index: 1;
 }
 
-/* Deals Carousel */
-.carousel-container {
-  margin: 0 -1px;
+.category-sidebar .sidebar-title {
+  font-weight: 600;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.02);
+  padding: 1rem;
 }
 
-.carousel-item {
-  padding: 1px;
+.category-sidebar .sidebar-title i {
+  color: var(--primary-color);
+  font-size: 1.2rem;
 }
 
-.carousel-section {
-  position: relative;
-  margin: 0 -10px;
-  padding: 0 4px;
+.category-sidebar .MuiList-root {
+  padding: 0.5rem;
 }
 
-.carousel-button-group {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  pointer-events: none;
+.category-sidebar .MuiListItemButton-root {
+  border-radius: 12px;
+  margin: 0.3rem 0;
+  padding: 0.8rem 1rem;
+  transition: all 0.2s ease;
 }
 
-.custom-carousel-button {
-  position: absolute !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  background-color: white !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  pointer-events: auto !important;
-  color: var(--text-color) !important;
+.category-sidebar .MuiListItemButton-root:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.08);
+  transform: translateX(4px);
 }
 
-.custom-carousel-button:hover {
-  background-color: var(--primary-color) !important;
-  color: white !important;
-  transform: translateY(-50%) scale(1.1) !important;
+.category-sidebar .MuiListItemButton-root.Mui-selected {
+  background-color: rgba(var(--primary-color-rgb), 0.12);
 }
 
-.custom-carousel-button.prev {
-  left: 0 !important;
+.category-sidebar .MuiListItemButton-root.Mui-selected:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.16);
 }
 
-.custom-carousel-button.next {
-  right: 12px !important;
+.category-sidebar .MuiListItemIcon-root {
+  min-width: 40px;
+  color: var(--primary-color);
+  font-size: 1.2rem;
 }
 
-.deals-carousel {
-  position: relative;
-  padding: 0 2px;
+.category-sidebar .MuiListItemText-primary {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
-/* Deal Card */
-.deal-card {
-  height: 100%;
+.category-sidebar .MuiCollapse-root .MuiListItemButton-root {
+  padding-left: 3.2rem;
+  margin: 0.2rem 0;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.category-sidebar .MuiCollapse-root .MuiListItemText-primary {
+  font-size: 0.9rem;
+  font-weight: normal;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.category-sidebar .MuiCollapse-root .MuiListItemButton-root:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.06);
+}
+
+.category-sidebar .MuiCollapse-root .MuiListItemButton-root.Mui-selected {
+  background-color: rgba(var(--primary-color-rgb), 0.08);
+}
+
+/* Category Sections */
+.categories-container {
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease;
+  gap: 2rem;
+}
+
+.category-section {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.category-section h5 {
+  color: var(--text-color);
+  margin-left: 0.5rem;
+}
+
+.category-section .fas {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+}
+
+/* Carousel Styles */
+.carousel-section {
+  margin: 1rem 0;
+  position: relative;
+  z-index: 1;
+}
+
+.carousel-container {
+  padding: 1rem 0;
+}
+
+.carousel-item-wrapper {
+  padding: 0 0.75rem;
+  height: 100%;
+}
+
+.react-multi-carousel-list {
+  padding: 0 1.5rem;
+}
+
+.react-multi-carousel-track {
+  margin: 0 -0.75rem;
+  display: flex;
+  align-items: stretch;
+}
+
+.react-multi-carousel-item {
+  display: flex;
+  height: auto !important;
+}
+
+/* Deal Card Styles */
+.deal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .deal-card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.deal-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: contain;
-  background-color: white;
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
+/* Custom arrow styles */
+.react-multiple-carousel__arrow {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border-radius: 50% !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+  z-index: 2 !important;
 }
 
-.deal-info {
-  padding: 1rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.react-multiple-carousel__arrow:hover {
+  background: rgba(0, 0, 0, 0.8) !important;
+  opacity: 1;
 }
 
-.deal-title {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.react-multiple-carousel__arrow--left {
+  left: 4px !important;
 }
 
-.deal-price {
-  color: var(--secondary-color);
-  font-weight: bold;
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
+.react-multiple-carousel__arrow--right {
+  right: 4px !important;
 }
 
-.deal-original-price {
-  text-decoration: line-through;
-  color: var(--text-color-light);
-  font-size: 0.9rem;
-  margin-left: 0.5rem;
+/* Responsive Styles */
+@media (max-width: 1440px) {
+  .carousel-item-wrapper {
+    padding: 0 0.5rem;
+  }
+
+  .react-multi-carousel-track {
+    margin: 0 -0.5rem;
+  }
+
+  .react-multi-carousel-list {
+    padding: 0 1rem;
+  }
 }
 
-.deal-retailer {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-color-light);
-  font-size: 0.9rem;
-  margin-top: auto;
+@media (max-width: 1024px) {
+  .carousel-section {
+    margin: 0.75rem 0;
+  }
+
+  .carousel-container {
+    padding: 0.75rem 0;
+  }
+
+  .react-multiple-carousel__arrow {
+    min-width: 35px !important;
+    min-height: 35px !important;
+  }
 }
 
-/* Loading State */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
+@media (max-width: 640px) {
+  .carousel-section {
+    margin: 0.5rem 0;
+  }
+
+  .carousel-container {
+    padding: 0.5rem 0;
+  }
+
+  .carousel-item-wrapper {
+    padding: 0 0.25rem;
+  }
+
+  .react-multi-carousel-track {
+    margin: 0 -0.25rem;
+  }
+
+  .react-multi-carousel-list {
+    padding: 0 0.5rem;
+  }
+
+  .react-multiple-carousel__arrow {
+    display: none;
+  }
+
+  .deal-card {
+    margin: 0 0.25rem;
+  }
 }
 
 /* Responsive Design */
@@ -308,4 +418,13 @@
   .deal-card img {
     height: 130px;
   }
+}
+
+/* Loading State */
+.loading-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
 }

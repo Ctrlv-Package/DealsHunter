@@ -12,6 +12,10 @@ A modern full-stack web application for aggregating and displaying the best deal
 - 💼 Multi-retailer support
 - 🎨 Modern Material-UI design
 - 📊 Interactive deal carousels
+- 🚀 Optimized performance with React hooks
+- 🎭 Smooth animations and transitions
+- 📱 Adaptive layout for all screen sizes
+- 🔄 Dynamic category filtering
 
 ## Tech Stack
 
@@ -20,14 +24,32 @@ A modern full-stack web application for aggregating and displaying the best deal
 - Material-UI for components
 - React Router for navigation
 - React Multi Carousel for deal displays
-- Custom CSS for styling
+- Font Awesome icons
+- Custom CSS with modern features
+- Performance optimizations with useMemo and useCallback
 
-### Backend
-- Node.js with Express
-- MongoDB for data storage
-- Mongoose for data modeling
-- JWT for authentication
-- Custom scraping service
+### Performance Features
+- Memoized components and computations
+- Optimized state management
+- Efficient filtering and search
+- Responsive image loading
+- Smooth animations
+- Debounced search input
+- Optimized carousel rendering
+
+### Responsive Design
+- Desktop (1440px+): 4 items per row
+- Large Tablet (1024px-1440px): 3 items per row
+- Tablet (640px-1024px): 2 items per row
+- Mobile (<640px): 1 item per row
+
+### UI Components
+- Category sidebar with expandable sections
+- Dynamic deal carousels
+- Responsive navigation
+- Search functionality
+- Modern card design
+- Smooth transitions
 
 ## Getting Started
 

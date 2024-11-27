@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
@@ -8,7 +8,14 @@ import {
   Paper,
   Button,
   CircularProgress,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Collapse,
 } from '@mui/material';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import './App.css';
 import logo from './assets/logo.svg';
 import LoginPage from './pages/LoginPage';
@@ -32,7 +39,8 @@ function AppContent() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -87,46 +95,107 @@ function AppContent() {
     fetchDeals();
   }, []);
 
-  const filteredDeals = useMemo(() => {
-    return deals.filter(
-      (deal) =>
-        (selectedCategory === 'All' || deal.category === selectedCategory) &&
-        (searchQuery === '' ||
-          deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          deal.description?.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }, [deals, selectedCategory, searchQuery]);
+  const categoryGroups = useMemo(() => ({
+    'Electronics': ['Smartphones', 'Laptops', 'TVs', 'Audio', 'Cameras', 'Accessories'],
+    'Gaming': ['Consoles', 'Video Games', 'Gaming PCs', 'Accessories', 'VR', 'Gaming Chairs'],
+    'Appliances': ['Kitchen', 'Laundry', 'Refrigerators', 'Dishwashers', 'Air Conditioners', 'Vacuums'],
+    'Home & Garden': ['Furniture', 'Decor', 'Kitchen', 'Bedding', 'Garden Tools', 'Lighting'],
+    'Fashion': ['Men\'s Clothing', 'Women\'s Clothing', 'Shoes', 'Accessories', 'Jewelry', 'Watches'],
+    'Sports & Outdoors': ['Exercise Equipment', 'Outdoor Recreation', 'Sports Gear', 'Camping', 'Fishing', 'Cycling']
+  }), []);
 
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-  };
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const carouselResponsive = {
+  const carouselResponsive = useMemo(() => ({
     superLargeDesktop: {
-      breakpoint: { max: 4000, min: 1600 },
-      items: 5,
+      breakpoint: { max: 4000, min: 1440 },
+      items: 4,
+      slidesToSlide: 4,
+      partialVisibilityGutter: 0
     },
     desktop: {
-      breakpoint: { max: 1600, min: 1024 },
-      items: 4,
+      breakpoint: { max: 1440, min: 1024 },
+      items: 3,
+      slidesToSlide: 3,
+      partialVisibilityGutter: 0
     },
     tablet: {
-      breakpoint: { max: 1024, min: 768 },
-      items: 3,
+      breakpoint: { max: 1024, min: 640 },
+      items: 2,
+      slidesToSlide: 2,
+      partialVisibilityGutter: 0
     },
     mobile: {
-      breakpoint: { max: 768, min: 480 },
-      items: 2,
-    },
-    smallMobile: {
-      breakpoint: { max: 480, min: 0 },
+      breakpoint: { max: 640, min: 0 },
       items: 1,
-    },
-  };
+      slidesToSlide: 1,
+      partialVisibilityGutter: 0
+    }
+  }), []);
+
+  const filteredDeals = useMemo(() => {
+    if (!deals) return [];
+    let filtered = [...deals];
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(deal =>
+        deal.title.toLowerCase().includes(query) ||
+        deal.description.toLowerCase().includes(query)
+      );
+    }
+
+    if (selectedCategory) {
+      filtered = filtered.filter(deal => deal.category === selectedCategory);
+      if (selectedSubcategory) {
+        filtered = filtered.filter(deal => deal.subcategory === selectedSubcategory);
+      }
+    }
+
+    return filtered;
+  }, [deals, searchQuery, selectedCategory, selectedSubcategory]);
+
+  const dealsByCategory = useMemo(() => {
+    const groupedDeals: { [key: string]: Deal[] } = {};
+    Object.keys(categoryGroups).forEach(category => {
+      groupedDeals[category] = filteredDeals.filter(deal => deal.category === category);
+    });
+    return groupedDeals;
+  }, [filteredDeals, categoryGroups]);
+
+  const getCategoryIcon = useCallback((category: string) => {
+    switch (category) {
+      case 'Electronics':
+        return <i className="fas fa-tv" />;
+      case 'Gaming':
+        return <i className="fas fa-gamepad" />;
+      case 'Appliances':
+        return <i className="fas fa-blender" />;
+      case 'Home & Garden':
+        return <i className="fas fa-home" />;
+      case 'Fashion':
+        return <i className="fas fa-tshirt" />;
+      case 'Sports & Outdoors':
+        return <i className="fas fa-running" />;
+      default:
+        return null;
+    }
+  }, []);
+
+  const handleCategoryClick = useCallback((category: string) => {
+    setSelectedCategory(prevCategory => prevCategory === category ? null : category);
+    setSelectedSubcategory(null);
+  }, []);
+
+  const handleSubcategoryClick = useCallback((subcategory: string) => {
+    setSelectedSubcategory(prevSubcategory => 
+      prevSubcategory === subcategory ? null : subcategory
+    );
+  }, []);
+
+  const MemoizedDealCard = useMemo(() => 
+    React.memo(DealCard, (prevProps, nextProps) => {
+      return prevProps.deal._id === nextProps.deal._id;
+    })
+  , []);
 
   const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(location.pathname);
 
@@ -142,7 +211,7 @@ function AppContent() {
               placeholder="Search for the best deals..."
               className="search-input"
               value={searchQuery}
-              onChange={handleSearch}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
         </div>
@@ -160,10 +229,52 @@ function AppContent() {
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/" element={
           <div className="main-content">
-            <CategorySidebar
-              selectedCategory={selectedCategory}
-              onSelectCategory={handleCategorySelect}
-            />
+            <div className="category-sidebar">
+              <Typography 
+                variant="h6" 
+                className="sidebar-title"
+                sx={{ 
+                  padding: '1rem',
+                  borderBottom: '1px solid rgba(0,0,0,0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
+                <i className="fas fa-filter" />
+                Categories
+              </Typography>
+              <List>
+                {Object.entries(categoryGroups).map(([category, subcategories]) => (
+                  <div key={category}>
+                    <ListItemButton 
+                      onClick={() => handleCategoryClick(category)}
+                      selected={selectedCategory === category}
+                    >
+                      <ListItemIcon>
+                        {getCategoryIcon(category)}
+                      </ListItemIcon>
+                      <ListItemText primary={category} />
+                      {selectedCategory === category ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    </ListItemButton>
+                    <Collapse in={selectedCategory === category} timeout={200}>
+                      <List component="div" disablePadding>
+                        {subcategories.map((subcategory) => (
+                          <ListItemButton
+                            key={subcategory}
+                            sx={{ pl: 4 }}
+                            onClick={() => handleSubcategoryClick(subcategory)}
+                            selected={selectedSubcategory === subcategory}
+                          >
+                            <ListItemText primary={subcategory} />
+                          </ListItemButton>
+                        ))}
+                      </List>
+                    </Collapse>
+                  </div>
+                ))}
+              </List>
+            </div>
             <div className="deals-container">
               {loading ? (
                 <CircularProgress />
@@ -172,7 +283,53 @@ function AppContent() {
                   <Typography color="error">{error}</Typography>
                 </Paper>
               ) : (
-                filteredDeals.map((deal) => <DealCard key={deal._id} deal={deal} />)
+                <div className="categories-container">
+                  {Object.entries(categoryGroups).map(([category, subcategories]) => {
+                    const categoryDeals = dealsByCategory[category];
+                    if (!categoryDeals || categoryDeals.length === 0) return null;
+                    
+                    return (
+                      <div key={category} className="category-section">
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            mb: 2, 
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                          }}
+                        >
+                          {getCategoryIcon(category)}
+                          {category}
+                        </Typography>
+                        <div className="carousel-section">
+                          <Carousel
+                            responsive={carouselResponsive}
+                            infinite={true}
+                            keyBoardControl={true}
+                            removeArrowOnDeviceType={["mobile"]}
+                            containerClass="carousel-container"
+                            itemClass="carousel-item"
+                            partialVisible={false}
+                            centerMode={false}
+                            swipeable={true}
+                            draggable={true}
+                            minimumTouchDrag={80}
+                            ssr={false}
+                            shouldResetAutoplay={false}
+                          >
+                            {categoryDeals.map((deal) => (
+                              <div key={deal._id} className="carousel-item-wrapper">
+                                <MemoizedDealCard deal={deal} />
+                              </div>
+                            ))}
+                          </Carousel>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
