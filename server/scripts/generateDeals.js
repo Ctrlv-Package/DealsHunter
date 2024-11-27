@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Deal = require('../models/Deal');
 require('dotenv').config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dealshunter';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/deals_db';
 const DEALS_PER_SUBCATEGORY = 30; // This will generate ~1080 deals total (30 * 36 subcategories)
 const BATCH_SIZE = 100; // Increased batch size for better performance
 
@@ -68,7 +68,7 @@ const categoryImages = {
   'Electronics': [
     'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&w=500&q=80', // Laptop
     'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&w=500&q=80', // Smart Watch
-    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&w=500&q=80', // Headphones
+    'https://images.unsplash.com/photo-1505740420928-d851c6caeaed?auto=format&w=500&q=80', // Headphones
     'https://images.unsplash.com/photo-1511707171634-d851c5c3a47b?auto=format&w=500&q=80', // Mobile Phone
     'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&w=500&q=80', // Tablet
   ],
