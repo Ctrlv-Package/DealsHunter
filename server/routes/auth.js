@@ -5,6 +5,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const crypto = require('crypto');
 const auth = require('../middleware/auth'); // Assuming you have an auth middleware
+const emailService = require('../services/emailService');
 
 // Signup route
 router.post('/signup', async (req, res) => {
@@ -137,9 +138,15 @@ router.post('/forgot-password',
       const resetToken = user.generateResetToken();
       await user.save();
 
-      // TODO: Send email with reset token
+      // Send password reset email
+      try {
+        await emailService.sendPasswordResetEmail(user, resetToken);
+      } catch (emailErr) {
+        console.error('Error sending reset email:', emailErr);
+      }
+
       // For development, return token in response
-      res.json({ 
+      res.json({
         msg: 'Password reset email sent',
         resetToken // Remove this in production
       });
