@@ -40,6 +40,7 @@ const DealCard: React.FC<DealCardProps> = ({ deal }) => {
           height="200"
           image={deal.image}
           alt={deal.title}
+          loading="lazy"
           sx={{
             objectFit: 'contain',
             backgroundColor: '#f5f5f5',

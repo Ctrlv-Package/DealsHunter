@@ -49,30 +49,44 @@ app.use('/api/reports', dealReportRoutes);
 // Deals endpoint
 app.get(
   '/api/deals',
-  cacheMiddleware(() => 'all_deals'),
+  cacheMiddleware(req => `deals_${req.query.page || 1}_${req.query.limit || 50}`),
   async (req, res) => {
-  try {
-    console.log('Received request for deals');
-    console.log('MongoDB connection state:', mongoose.connection.readyState);
-    
-    if (mongoose.connection.readyState !== 1) {
-      throw new Error('MongoDB is not connected');
+    try {
+      console.log('Received request for deals');
+      console.log('MongoDB connection state:', mongoose.connection.readyState);
+
+      if (mongoose.connection.readyState !== 1) {
+        throw new Error('MongoDB is not connected');
+      }
+
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const skip = (page - 1) * limit;
+
+      const deals = await Deal.find({ isActive: true })
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(limit);
+      const total = await Deal.countDocuments({ isActive: true });
+      console.log(`Found ${deals.length} deals out of ${total}`);
+
+      res.json({
+        deals,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit)
+      });
+    } catch (error) {
+      console.error('Error in /api/deals:', error);
+      console.error('Stack trace:', error.stack);
+      res.status(500).json({
+        message: 'Error fetching deals',
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
-    
-    const deals = await Deal.find({ isActive: true }).sort('-createdAt');
-    console.log(`Found ${deals.length} deals`);
-    
-    res.json(deals);
-  } catch (error) {
-    console.error('Error in /api/deals:', error);
-    console.error('Stack trace:', error.stack);
-    res.status(500).json({ 
-      message: 'Error fetching deals',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
   }
-});
+);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
