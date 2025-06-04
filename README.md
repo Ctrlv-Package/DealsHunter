@@ -79,7 +79,7 @@ A modern full-stack web application for aggregating and displaying the best deal
 4. Seed the database:
    ```bash
    cd server
-   node seedDeals.js
+   node scripts/generateDeals.js
    ```
 
 5. Start the development servers:
