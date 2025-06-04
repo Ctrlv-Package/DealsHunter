@@ -39,6 +39,8 @@ function AppContent() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -70,17 +72,19 @@ function AppContent() {
     setUser(null);
   };
 
-  const fetchDeals = async () => {
+  const fetchDeals = async (pageToLoad = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:3001/api/deals');
+      const response = await fetch(`http://localhost:3001/api/deals?page=${pageToLoad}&limit=50`);
       if (!response.ok) {
         throw new Error(`Failed to fetch deals: ${response.status}`);
       }
       const data = await response.json();
-      if (Array.isArray(data)) {
-        setDeals(data);
+      if (Array.isArray(data.deals)) {
+        setDeals(prev => pageToLoad === 1 ? data.deals : [...prev, ...data.deals]);
+        setPage(data.page);
+        setTotalPages(data.totalPages);
       } else {
         throw new Error('Invalid data format from server');
       }
@@ -92,7 +96,7 @@ function AppContent() {
   };
 
   useEffect(() => {
-    fetchDeals();
+    fetchDeals(1);
   }, []);
 
   const categoryGroups = useMemo(() => ({
@@ -330,6 +334,13 @@ function AppContent() {
                     );
                   })}
                 </div>
+                {page < totalPages && (
+                  <Box textAlign="center" mt={4}>
+                    <Button variant="outlined" onClick={() => fetchDeals(page + 1)} disabled={loading}>
+                      {loading ? 'Loading...' : 'Load More'}
+                    </Button>
+                  </Box>
+                )}
               )}
             </div>
           </div>
