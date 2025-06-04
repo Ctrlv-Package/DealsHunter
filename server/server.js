@@ -38,13 +38,19 @@ app.get('/health', (req, res) => {
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const dealAlertRoutes = require('./routes/dealAlerts');
+const dealReportRoutes = require('./routes/dealReports');
+const cacheMiddleware = require('./middleware/cache');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/alerts', dealAlertRoutes);
+app.use('/api/reports', dealReportRoutes);
 
 // Deals endpoint
-app.get('/api/deals', async (req, res) => {
+app.get(
+  '/api/deals',
+  cacheMiddleware(() => 'all_deals'),
+  async (req, res) => {
   try {
     console.log('Received request for deals');
     console.log('MongoDB connection state:', mongoose.connection.readyState);
@@ -196,6 +202,21 @@ app.delete('/api/deals/:id', async (req, res) => {
     res.json({ message: 'Deal deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting deal' });
+  }
+});
+
+// Track deal views
+app.post('/api/deals/:id/view', async (req, res) => {
+  try {
+    const deal = await Deal.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+    if (!deal) return res.status(404).json({ message: 'Deal not found' });
+    res.json({ views: deal.views });
+  } catch (error) {
+    res.status(500).json({ message: 'Error recording view' });
   }
 });
 

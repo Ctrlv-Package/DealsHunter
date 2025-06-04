@@ -70,12 +70,11 @@ A modern full-stack web application for aggregating and displaying the best deal
    ```
 
 3. Set up environment variables:
-   Create a `.env` file in the server directory with:
+   Copy `.env.example` to `.env` in the repository root and update the values:
+   ```bash
+   cp .env.example .env
    ```
-   MONGODB_URI=mongodb://127.0.0.1:27017/deals_db
-   JWT_SECRET=your_jwt_secret
-   PORT=3001
-   ```
+   Customize the variables for your environment (database URL, JWT secret, email settings, etc.).
 
 4. Seed the database:
    ```bash
