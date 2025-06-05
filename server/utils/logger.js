@@ -1,5 +1,7 @@
 const winston = require('winston');
-const config = require('../config');
+// Pull in the main application configuration rather than the scraping
+// configuration file located at server/config.js.
+const config = require('../config/index');
 const path = require('path');
 
 // Create logs directory if it doesn't exist

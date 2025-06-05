@@ -1,6 +1,9 @@
 const nodemailer = require('nodemailer');
 const templates = require('./emailTemplates');
-const config = require('../config');
+// Load application configuration (env vars, client URL, email settings, etc.)
+// Explicitly require the config directory's index.js to avoid accidentally
+// importing the scraping config located at server/config.js.
+const config = require('../config/index');
 
 class EmailService {
   constructor() {
