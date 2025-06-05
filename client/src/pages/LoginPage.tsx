@@ -296,6 +296,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
         <Box sx={{ textAlign: 'center' }}>
           <Link
             component="button"
+            type="button"
             variant="body2"
             onClick={() => navigate('/signup')}
             sx={{ mb: 2, display: 'block' }}
@@ -304,6 +305,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
           </Link>
           <Link
             component="button"
+            type="button"
             variant="body2"
             onClick={() => navigate('/forgot-password')}
           >
