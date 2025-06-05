@@ -5,6 +5,25 @@ const dotenv = require('dotenv');
 const path = require('path');
 const Deal = require('./models/Deal');
 const connectDB = require('./config/database');
+const config = require('./config');
+
+const retailerNameMap = {
+  amazon: 'Amazon',
+  bestbuy: 'Best Buy',
+  walmart: 'Walmart',
+  target: 'Target',
+  ebay: 'eBay',
+  newegg: 'Newegg',
+  bhphoto: 'B&H Photo',
+  costco: 'Costco',
+  homedepot: 'Home Depot',
+  lowes: 'Lowes'
+};
+
+const getEnabledRetailers = () =>
+  Object.keys(config.retailers)
+    .filter(key => config.retailers[key])
+    .map(key => retailerNameMap[key]);
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -63,11 +82,14 @@ app.get(
       const limit = parseInt(req.query.limit) || 50;
       const skip = (page - 1) * limit;
 
-      const deals = await Deal.find({ isActive: true })
+      const enabledRetailers = getEnabledRetailers();
+      const query = { isActive: true, retailer: { $in: enabledRetailers } };
+
+      const deals = await Deal.find(query)
         .sort('-createdAt')
         .skip(skip)
         .limit(limit);
-      const total = await Deal.countDocuments({ isActive: true });
+      const total = await Deal.countDocuments(query);
       console.log(`Found ${deals.length} deals out of ${total}`);
 
       res.json({
@@ -92,7 +114,8 @@ app.get(
 app.get('/api/health', async (req, res) => {
   try {
     const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-    const count = await Deal.countDocuments();
+    const enabledRetailers = getEnabledRetailers();
+    const count = await Deal.countDocuments({ retailer: { $in: enabledRetailers } });
     res.json({ 
       status: 'ok',
       database: dbStatus,
@@ -191,9 +214,16 @@ app.get('/api/deals/count', async (req, res) => {
 
 app.get('/api/deals/retailer/:retailer', async (req, res) => {
   try {
-    const deals = await Deal.find({ 
-      retailer: new RegExp(req.params.retailer, 'i')
-    });
+    const key = Object.keys(retailerNameMap).find(
+      k => retailerNameMap[k].toLowerCase() === req.params.retailer.toLowerCase()
+    );
+    if (key && !config.retailers[key]) {
+      return res.json([]);
+    }
+
+    const regex = new RegExp(req.params.retailer, 'i');
+    const enabledRetailers = getEnabledRetailers().filter(r => regex.test(r));
+    const deals = await Deal.find({ retailer: { $in: enabledRetailers } });
     res.json(deals);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching deals by retailer' });
@@ -237,7 +267,11 @@ app.post('/api/deals/:id/view', async (req, res) => {
 // Get deals by category
 app.get('/api/deals/category/:category', async (req, res) => {
   try {
-    const deals = await Deal.find({ category: req.params.category })
+    const enabledRetailers = getEnabledRetailers();
+    const deals = await Deal.find({
+      category: req.params.category,
+      retailer: { $in: enabledRetailers }
+    })
       .sort({ createdAt: -1 })
       .limit(50);
     res.json(deals);
@@ -254,11 +288,13 @@ app.get('/api/deals/search', async (req, res) => {
       return res.status(400).json({ message: 'Search query is required' });
     }
 
+    const enabledRetailers = getEnabledRetailers();
     const deals = await Deal.find({
       $or: [
         { title: { $regex: searchQuery, $options: 'i' } },
         { description: { $regex: searchQuery, $options: 'i' } }
-      ]
+      ],
+      retailer: { $in: enabledRetailers }
     })
     .sort({ createdAt: -1 })
     .limit(50);
@@ -277,6 +313,9 @@ app.get('/api/deals/price-range', async (req, res) => {
     
     if (min) query.price = { $gte: parseFloat(min) };
     if (max) query.price = { ...query.price, $lte: parseFloat(max) };
+
+    const enabledRetailers = getEnabledRetailers();
+    query.retailer = { $in: enabledRetailers };
     
     const deals = await Deal.find(query)
       .sort({ price: 1 })
@@ -292,7 +331,8 @@ app.get('/api/deals/price-range', async (req, res) => {
 app.get('/api/deals/latest', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
-    const deals = await Deal.find()
+    const enabledRetailers = getEnabledRetailers();
+    const deals = await Deal.find({ retailer: { $in: enabledRetailers } })
       .sort({ createdAt: -1 })
       .limit(limit);
     
@@ -325,23 +365,25 @@ app.get('/api/deals/filter', async (req, res) => {
       if (maxPrice) query.price.$lte = parseFloat(maxPrice);
     }
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
-    }
+    query.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  query.retailer = { $in: getEnabledRetailers() };
 
     // Calculate skip for pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Execute query
-    const deals = await Deal.find(query)
-      .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+  const deals = await Deal.find(query)
+    .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+    .skip(skip)
+    .limit(parseInt(limit));
 
     // Get total count for pagination
-    const total = await Deal.countDocuments(query);
+  const total = await Deal.countDocuments(query);
 
     res.json({
       deals,
