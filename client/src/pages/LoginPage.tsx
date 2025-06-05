@@ -294,10 +294,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
 
         </Box>
         <Box sx={{ textAlign: 'center' }}>
-          <Link href="#" variant="body2" onClick={() => navigate('/signup')} sx={{ mb: 2, display: 'block' }}>
+          <Link
+            component="button"
+            variant="body2"
+            onClick={() => navigate('/signup')}
+            sx={{ mb: 2, display: 'block' }}
+          >
             Don't have an account? Sign up
           </Link>
-          <Link href="#" variant="body2" onClick={() => navigate('/forgot-password')}>
+          <Link
+            component="button"
+            variant="body2"
+            onClick={() => navigate('/forgot-password')}
+          >
             Forgot password?
           </Link>
         </Box>
