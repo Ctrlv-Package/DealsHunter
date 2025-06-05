@@ -53,7 +53,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // Load saved credentials if "Remember me" was previously checked
     const savedEmail = localStorage.getItem('rememberedEmail');
     const savedPassword = localStorage.getItem('rememberedPassword');
     if (savedEmail && savedPassword) {
@@ -86,7 +85,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Validate on change if the field has been touched
     if (touched[name]) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -119,7 +117,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Mark all fields as touched
     setTouched({
       email: true,
       password: true,
@@ -141,7 +138,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
 
       if (!response.ok) throw new Error(data.message || 'Login failed');
 
-      // Save token and user data
       localStorage.setItem('token', data.token);
       localStorage.setItem(
         'userData',
@@ -152,7 +148,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
         })
       );
 
-      // Handle "Remember me" option
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', formData.email);
         localStorage.setItem('rememberedPassword', formData.password);
@@ -161,7 +156,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
         localStorage.removeItem('rememberedPassword');
       }
 
-      // Navigate to home and refresh the state
       setIsAuthenticated(true);
       setUser({
         firstName: data.user.firstName,
@@ -291,14 +285,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
           >
             {loading ? <CircularProgress size={24} /> : 'Log In'}
           </Button>
-
         </Box>
+
         <Box sx={{ textAlign: 'center' }}>
           <Link
             component="button"
             type="button"
             variant="body2"
-            onClick={() => navigate('/signup')}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/signup');
+            }}
             sx={{ mb: 2, display: 'block' }}
           >
             Don't have an account? Sign up
@@ -307,7 +304,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
             component="button"
             type="button"
             variant="body2"
-            onClick={() => navigate('/forgot-password')}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/forgot-password');
+            }}
           >
             Forgot password?
           </Link>
