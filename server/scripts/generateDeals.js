@@ -1,16 +1,29 @@
 const { faker } = require('@faker-js/faker');
 const mongoose = require('mongoose');
 const Deal = require('../models/Deal');
+const config = require('../config');
 require('dotenv').config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/deals_db';
 const DEALS_PER_SUBCATEGORY = 30; // This will generate ~1080 deals total (30 * 36 subcategories)
 const BATCH_SIZE = 100; // Increased batch size for better performance
 
-const retailers = [
-  'Amazon', 'Best Buy', 'Walmart', 'Target', 'eBay',
-  'Newegg', 'B&H Photo', 'Costco', 'Home Depot', 'Lowes'
-];
+const retailerNameMap = {
+  amazon: 'Amazon',
+  bestbuy: 'Best Buy',
+  walmart: 'Walmart',
+  target: 'Target',
+  ebay: 'eBay',
+  newegg: 'Newegg',
+  bhphoto: 'B&H Photo',
+  costco: 'Costco',
+  homedepot: 'Home Depot',
+  lowes: 'Lowes'
+};
+
+const retailers = Object.keys(config.retailers)
+  .filter(key => config.retailers[key])
+  .map(key => retailerNameMap[key]);
 
 const categoryGroups = {
   'Electronics': [
