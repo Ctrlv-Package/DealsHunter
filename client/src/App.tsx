@@ -176,10 +176,13 @@ function AppContent() {
     if (!baseDeals) return [];
     let filtered = [...baseDeals];
 
-    if (selectedCategory) {
-      filtered = filtered.filter(deal => deal.category === selectedCategory);
-      if (selectedSubcategory) {
-        filtered = filtered.filter(deal => deal.subcategory === selectedSubcategory);
+    // When searching, ignore previously selected category filters
+    if (!searchQuery) {
+      if (selectedCategory) {
+        filtered = filtered.filter(deal => deal.category === selectedCategory);
+        if (selectedSubcategory) {
+          filtered = filtered.filter(deal => deal.subcategory === selectedSubcategory);
+        }
       }
     }
 
@@ -248,7 +251,14 @@ function AppContent() {
               placeholder="Search for the best deals..."
               className="search-input"
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSearchQuery(value);
+                if (value) {
+                  setSelectedCategory(null);
+                  setSelectedSubcategory(null);
+                }
+              }}
             />
           </div>
         </div>
