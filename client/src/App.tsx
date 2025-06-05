@@ -287,6 +287,7 @@ function AppContent() {
                   <Typography color="error">{error}</Typography>
                 </Paper>
               ) : (
+                <>
                 <div className="categories-container">
                   {Object.entries(categoryGroups).map(([category, subcategories]) => {
                     const categoryDeals = dealsByCategory[category];
@@ -341,6 +342,7 @@ function AppContent() {
                     </Button>
                   </Box>
                 )}
+                </>
               )}
             </div>
           </div>
