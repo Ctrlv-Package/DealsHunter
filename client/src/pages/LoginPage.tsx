@@ -95,6 +95,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    if (!value) return; // 👈 Skip validation if field is empty
+
     setTouched((prev) => ({ ...prev, [name]: true }));
     setValidationErrors((prev) => ({
       ...prev,
@@ -206,7 +209,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
           <TextField
             margin="normal"
             required
@@ -292,10 +295,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
             component="button"
             type="button"
             variant="body2"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/signup');
-            }}
+            onClick={() => navigate('/signup')}
             sx={{ mb: 2, display: 'block' }}
           >
             Don't have an account? Sign up
@@ -304,10 +304,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
             component="button"
             type="button"
             variant="body2"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/forgot-password');
-            }}
+            onClick={() => navigate('/forgot-password')}
           >
             Forgot password?
           </Link>
