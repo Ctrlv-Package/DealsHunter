@@ -8,11 +8,12 @@ import {
   IconButton,
   InputAdornment,
   Alert,
-  CircularProgress
+  CircularProgress,
+  alpha,
 } from '@mui/material';
 import {
   Email as EmailIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -80,7 +81,14 @@ const ForgotPasswordPage: React.FC = () => {
       >
         <IconButton
           onClick={() => navigate('/login')}
-          sx={{ alignSelf: 'flex-start', mb: 2 }}
+          sx={{
+            alignSelf: 'flex-start',
+            mb: 2,
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+            '&:hover': {
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            },
+          }}
         >
           <ArrowBackIcon />
         </IconButton>
