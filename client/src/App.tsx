@@ -28,6 +28,7 @@ import CategorySidebar from './components/CategorySidebar';
 import DealCard from './components/DealCard';
 import Navbar from './components/Navbar';
 import { Deal } from './types/Deal';
+import useDebounce from './hooks/useDebounce';
 
 interface User {
   firstName: string;
@@ -44,6 +45,8 @@ function AppContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Deal[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const location = useLocation();
@@ -99,6 +102,39 @@ function AppContent() {
     fetchDeals(1);
   }, []);
 
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const fetchSearchResults = async (query: string) => {
+    try {
+      setSearchLoading(true);
+      setError(null);
+      const response = await fetch(
+        `http://localhost:3001/api/deals/search?q=${encodeURIComponent(query)}`
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to search deals: ${response.status}`);
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setSearchResults(data);
+      } else {
+        throw new Error('Invalid search data format');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (debouncedSearch.trim()) {
+      fetchSearchResults(debouncedSearch.trim());
+    } else {
+      setSearchResults([]);
+    }
+  }, [debouncedSearch]);
+
   const categoryGroups = useMemo(() => ({
     'Electronics': ['Smartphones', 'Laptops', 'TVs', 'Audio', 'Cameras', 'Accessories'],
     'Gaming': ['Consoles', 'Video Games', 'Gaming PCs', 'Accessories', 'VR', 'Gaming Chairs'],
@@ -136,16 +172,9 @@ function AppContent() {
   }), []);
 
   const filteredDeals = useMemo(() => {
-    if (!deals) return [];
-    let filtered = [...deals];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(deal =>
-        deal.title.toLowerCase().includes(query) ||
-        deal.description.toLowerCase().includes(query)
-      );
-    }
+    const baseDeals = searchQuery ? searchResults : deals;
+    if (!baseDeals) return [];
+    let filtered = [...baseDeals];
 
     if (selectedCategory) {
       filtered = filtered.filter(deal => deal.category === selectedCategory);
@@ -155,7 +184,7 @@ function AppContent() {
     }
 
     return filtered;
-  }, [deals, searchQuery, selectedCategory, selectedSubcategory]);
+  }, [deals, searchResults, searchQuery, selectedCategory, selectedSubcategory]);
 
   const dealsByCategory = useMemo(() => {
     const groupedDeals: { [key: string]: Deal[] } = {};
@@ -280,7 +309,7 @@ function AppContent() {
               </List>
             </div>
             <div className="deals-container">
-              {loading ? (
+              {loading || searchLoading ? (
                 <CircularProgress />
               ) : error ? (
                 <Paper>

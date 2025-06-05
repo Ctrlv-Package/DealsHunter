@@ -34,7 +34,7 @@ A modern full-stack web application for aggregating and displaying the best deal
 - Efficient filtering and search
 - Responsive image loading
 - Smooth animations
-- Debounced search input
+- Debounced server-powered search input
 - Optimized carousel rendering
 
 ### Responsive Design
