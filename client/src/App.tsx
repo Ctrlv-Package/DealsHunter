@@ -214,12 +214,16 @@ function AppContent() {
   }, []);
 
   const handleCategoryClick = useCallback((category: string) => {
+    setSearchQuery('');
+    setSearchResults([]);
     setSelectedCategory(prevCategory => prevCategory === category ? null : category);
     setSelectedSubcategory(null);
   }, []);
 
   const handleSubcategoryClick = useCallback((subcategory: string) => {
-    setSelectedSubcategory(prevSubcategory => 
+    setSearchQuery('');
+    setSearchResults([]);
+    setSelectedSubcategory(prevSubcategory =>
       prevSubcategory === subcategory ? null : subcategory
     );
   }, []);
