@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
 import {
@@ -50,6 +50,7 @@ function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -243,8 +244,18 @@ function AppContent() {
     <div className="app">
       <header className="app-header">
         <div className="header-left">
-          <img src={logo} alt="DealsHunter Logo" className="app-logo" />
-          <span className="site-name">DealsHunter</span>
+          <img
+            src={logo}
+            alt="DealsHunter Logo"
+            className="app-logo"
+            onClick={() => navigate('/')}
+          />
+          <span
+            className="site-name"
+            onClick={() => navigate('/')}
+          >
+            DealsHunter
+          </span>
           <div className="search-bar">
             <input
               type="text"
