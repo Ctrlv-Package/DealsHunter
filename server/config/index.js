@@ -48,6 +48,19 @@ const config = {
     checkPeriod: 600 // 10 minutes
   },
 
+    retailers: {
+    amazon: process.env.ENABLE_AMAZON !== 'false',
+    bestbuy: process.env.ENABLE_BESTBUY !== 'false',
+    walmart: process.env.ENABLE_WALMART !== 'false',
+    target: process.env.ENABLE_TARGET !== 'false',
+    ebay: process.env.ENABLE_EBAY !== 'false',
+    newegg: process.env.ENABLE_NEWEGG !== 'false',
+    bhphoto: process.env.ENABLE_BH_PHOTO !== 'false',
+    costco: process.env.ENABLE_COSTCO !== 'false',
+    homedepot: process.env.ENABLE_HOME_DEPOT !== 'false',
+    lowes: process.env.ENABLE_LOWES !== 'false'
+  },
+
   logging: {
     level: process.env.LOG_LEVEL || 'info',
     file: process.env.LOG_FILE || 'app.log'

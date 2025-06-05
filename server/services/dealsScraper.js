@@ -3,6 +3,7 @@ const natural = require('natural');
 const logger = require('../utils/logger');
 const NodeCache = require('node-cache');
 const rateLimit = require('express-rate-limit');
+const config = require('../config/index');
 
 /**
  * @class DealsScraper
@@ -134,73 +135,155 @@ class DealsScraper {
     
     if (cachedDeals) {
       logger.info('Returning cached deals');
-      return cachedDeals;
+      return cachedDeals.filter(d => {
+        const key = retailerMap[d.retailer];
+        return config.retailers[key];
+      });
     }
 
     try {
       // Since we don't have a Best Buy API key, let's generate some realistic deals
-      const deals = [
+      const allDeals = [
         {
-          title: "Samsung 65\" Class QN85C Neo QLED 4K Smart TV",
-          price: "1499.99",
-          originalPrice: "1999.99",
-          description: "Experience stunning 4K resolution and vibrant colors with Samsung's Neo QLED technology",
-          image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/samsung-65-neo-qled",
-          productId: "SAMS65QLED2024",
+          title: "Echo Dot (5th Gen) Smart Speaker",
+          price: "29.99",
+          originalPrice: "49.99",
+          description: "Compact smart speaker with Alexa",
+          image: "https://m.media-amazon.com/images/I/71xoR4A6q3L._AC_SL1000_.jpg",
+          productUrl: "https://www.amazon.com/dp/B09B8V1LZ3",
+          productId: "B09B8V1LZ3",
+          retailer: "Amazon",
+          category: "Electronics",
+          createdAt: new Date().toISOString()
+        },
+        {
+          title: "LG - 65\" Class C3 Series OLED 4K TV",
+          price: "1699.99",
+          originalPrice: "2499.99",
+          description: "Stunning OLED TV from LG",
+          image: "https://pisces.bbystatic.com/image2/BestBuy_US/images/products/6537/6537440_sd.jpg",
+          productUrl: "https://www.bestbuy.com/site/6537440.p",
+          productId: "6537440",
           retailer: "Best Buy",
           category: "Electronics",
           createdAt: new Date().toISOString()
         },
         {
-          title: "MacBook Air 13.6\" Laptop - Apple M2 chip",
-          price: "999.99",
-          originalPrice: "1199.99",
-          description: "Supercharged by the next-generation M2 chip",
+          title: "SAMSUNG 65\" Class 4K Crystal UHD TV",
+          price: "447.99",
+          originalPrice: "527.99",
+          description: "Crystal UHD with HDR",
+          image: "https://i5.walmartimages.com/asr/9d2c6cf5-9797-4a56-94f8-b43f2c833f94.64b9e93094ea3e23e194552c1c9f553e.jpeg",
+          productUrl: "https://www.walmart.com/ip/SAMTU7000",
+          productId: "SAMTU7000",
+          retailer: "Walmart",
+          category: "Electronics",
+          createdAt: new Date().toISOString()
+        },
+        {
+          title: "Apple Watch SE (2nd Gen)",
+          price: "219.99",
+          originalPrice: "249.99",
+          description: "Affordable Apple Watch",
+          image: "https://target.scene7.com/is/image/Target/GUEST_7c6b1622-6d3d-4657-8fef-ea6763493a47",
+          productUrl: "https://www.target.com/p/85896532",
+          productId: "85896532",
+          retailer: "Target",
+          category: "Electronics",
+          createdAt: new Date().toISOString()
+        },
+        {
+           title: "Refurbished iPad Pro",
+          price: "399.99",
+          originalPrice: "799.99",
+          description: "Refurbished tablet deal",
+          image: "https://i.ebayimg.com/images/g/z~kAAOSwHk9fNJVv/s-l1600.jpg",
+          productUrl: "https://www.ebay.com/itm/123456",
+          productId: "EBAYIPAD001",
+          retailer: "eBay",
+          category: "Electronics",
+          createdAt: new Date().toISOString()
+        },
+        {
+          title: "Gaming Laptop Sale",
+          price: "1099.99",
+          originalPrice: "1399.99",
+          description: "High performance laptop",
           image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca4?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/macbook-air-m2",
-          productId: "APPLEM2MBA2024",
-          retailer: "Best Buy",
+          productUrl: "https://www.newegg.com/p/ABC123",
+          productId: "NEWEGGLAP1",
+          retailer: "Newegg",
           category: "Electronics",
           createdAt: new Date().toISOString()
         },
         {
-          title: "PS5 Console - God of War Ragnarök Bundle",
-          price: "499.99",
-          originalPrice: "559.99",
-          description: "Experience the next generation of gaming",
-          image: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/ps5-console-bundle",
-          productId: "PS5GOWBUNDLE",
-          retailer: "Best Buy",
-          category: "Gaming",
-          createdAt: new Date().toISOString()
-        },
-        {
-          title: "LG 27\" UltraGear QHD Gaming Monitor",
-          price: "299.99",
-          originalPrice: "399.99",
-          description: "165Hz refresh rate and 1ms response time for smooth gaming",
-          image: "https://images.unsplash.com/photo-1527219525722-f9767a7f2884?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/lg-ultragear-monitor",
-          productId: "LG27ULTRA2024",
-          retailer: "Best Buy",
+          title: "Canon EOS R5 Camera",
+          price: "2999.99",
+          originalPrice: "3899.99",
+          description: "Professional mirrorless camera",
+          image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?ixlib=rb-4.0.3",
+          productUrl: "https://www.bhphotovideo.com/c/product/123456",
+          productId: "BHPR5",
+          retailer: "B&H Photo",
           category: "Electronics",
           createdAt: new Date().toISOString()
         },
         {
-          title: "Dyson V15 Detect Absolute Cordless Vacuum",
-          price: "649.99",
-          originalPrice: "749.99",
-          description: "Powerful suction with laser dust detection",
-          image: "https://images.unsplash.com/photo-1558317374-067fb5f30001?ixlib=rb-4.0.3",
-          productUrl: "https://www.bestbuy.com/dyson-v15-detect",
-          productId: "DYSONV15DETECT",
-          retailer: "Best Buy",
+          title: "Kirkland Signature Almonds",
+          price: "12.99",
+          originalPrice: "16.99",
+          description: "Healthy snack",
+          image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?ixlib=rb-4.0.3",
+          productUrl: "https://www.costco.com/item.html",
+          productId: "COSTCOALM",
+          retailer: "Costco",
+          category: "Home & Garden",
+          createdAt: new Date().toISOString()
+        },
+        {
+          title: "Ryobi 18V Cordless Drill",
+          price: "79.99",
+          originalPrice: "99.99",
+          description: "DIY power tool",
+          image: "https://images.unsplash.com/photo-1581091870627-3d3e9e3bd173?ixlib=rb-4.0.3",
+          productUrl: "https://www.homedepot.com/p/12345",
+          productId: "HD12345",
+          retailer: "Home Depot",
+          category: "Home & Garden",
+          createdAt: new Date().toISOString()
+        },
+        {
+          title: "Lowe's Ceiling Fan",
+          price: "99.99",
+          originalPrice: "149.99",
+          description: "Modern ceiling fan",
+          image: "https://images.unsplash.com/photo-1504208434309-cb69f4fe52b0?ixlib=rb-4.0.3",
+          productUrl: "https://www.lowes.com/pd/12345",
+          productId: "LOWESFAN",
+          retailer: "Lowes",
+          category: "Home & Garden",
           category: "Appliances",
           createdAt: new Date().toISOString()
         }
       ];
+
+      const retailerMap = {
+        'Amazon': 'amazon',
+        'Best Buy': 'bestbuy',
+        'Walmart': 'walmart',
+        'Target': 'target',
+        'eBay': 'ebay',
+        'Newegg': 'newegg',
+        'B&H Photo': 'bhphoto',
+        'Costco': 'costco',
+        'Home Depot': 'homedepot',
+        'Lowes': 'lowes'
+      };
+
+      const deals = allDeals.filter(d => {
+        const key = retailerMap[d.retailer];
+        return config.retailers[key];
+      });
 
       // Validate prices and categorize products
       const validatedDeals = deals.map(deal => {
