@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Alert,
   Stack,
+  alpha,
 } from '@mui/material';
 import {
   Visibility,
@@ -154,14 +155,14 @@ const SignupPage: React.FC<SignupPageProps> = ({ setIsAuthenticated, setUser }) 
           pb: 8, // Add padding at bottom
         }}
       >
-        <IconButton 
-          onClick={() => navigate('/')} 
-          sx={{ 
-            alignSelf: 'flex-start', 
+        <IconButton
+          onClick={() => navigate('/')}
+          sx={{
+            alignSelf: 'flex-start',
             mb: 2,
-            bgcolor: (theme) => theme.palette.grey[100],
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
             '&:hover': {
-              bgcolor: (theme) => theme.palette.grey[200],
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
             },
           }}
         >

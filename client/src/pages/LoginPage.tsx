@@ -12,6 +12,7 @@ import {
   Alert,
   Checkbox,
   FormControlLabel,
+  alpha,
 } from '@mui/material';
 import {
   Visibility,
@@ -189,7 +190,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ setIsAuthenticated, setUser }) =>
       >
         <IconButton
           onClick={() => navigate('/')}
-          sx={{ alignSelf: 'flex-start', mb: 2 }}
+          sx={{
+            alignSelf: 'flex-start',
+            mb: 2,
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+            '&:hover': {
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            },
+          }}
         >
           <ArrowBackIcon />
         </IconButton>
