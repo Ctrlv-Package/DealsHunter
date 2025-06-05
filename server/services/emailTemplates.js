@@ -1,4 +1,7 @@
-const config = require('../config');
+// Load environment and application configuration values.
+// Using the explicit path prevents Node from resolving to server/config.js,
+// which doesn't contain the settings required for email templates.
+const config = require('../config/index');
 
 const baseTemplate = (content) => `
 <!DOCTYPE html>
